@@ -15,6 +15,13 @@
 U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
                /* The first stack starts at the RAM high address */
 	       /* stack grows down. Fully decremental stack */
+#define MEMORY_BLOCK_SIZE 128;
+typedef struct FreeHeap {
+	struct FreeHeap* next;
+	void* memory_block;
+}
+
+struct FreeHeap* heapStart = NULL;
 
 /**
  * @brief: Initialize RAM as follows:
@@ -71,9 +78,31 @@ void memory_init(void)
 	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */
 		--gp_stack; 
 	}
-  
-	/* allocate memory for heap, not implemented yet*/
-  
+	
+	// Heap flush
+	U32 flush = 0x00000000;
+	int* target = p_end;
+	while (target != gp_stack)
+	{
+		*target = flush;
+		target+= sizeof(flush);
+	}
+	
+	/* allocate memory for heap ADDED BY MIKE*/
+	/* Heap starts at the end of the process control blocks, it ends at stack pointers */
+	struct FreeHeap start;
+	start.memory_block = p_end;
+	start.next = NULL;
+	heapStart = &start;
+	struct FreeHeap* tempPointer = heapStart;
+	while (tempPointer->memory_block + 2*MEMORY_BLOCK_SIZE < gp_stack)
+	{
+		struct FreeHeap nextPointer;
+		nextPointer.next = NULL;
+		nextPointer.memory_block = tempPointer->memory_block + MEMORY_BLOCK_SIZE;
+		tempPointer->next = &nextPointer;
+		tempPointer = tempPointer->next;
+	}
 }
 
 /**
@@ -98,16 +127,75 @@ U32 *alloc_stack(U32 size_b)
 	return sp;
 }
 
+// 1 if theres heap to allocate, 0 otherwise
+int hasHeap() 
+{
+	if (heapStart == null)
+		return 0;
+	if (heapStart->next > gp_stack)
+		return 0;
+	return 1;
+}
+
 void *k_request_memory_block(void) {
 #ifdef DEBUG_0 
 	printf("k_request_memory_block: entering...\n");
 #endif /* ! DEBUG_0 */
-	return (void *) NULL;
+	// TODO atomic(on) what is that
+	if (hasHeap() == 0)
+	{
+		// No more memory to give
+		while(hasHeap == 0)
+		{
+			// put pcb on blocked_resource_q
+			k_release_processor()
+		}
+	}
+	void* rVoid = heapStart->memory_block;
+	heapStart = heapStart->next;
+	// TODO atomic(off)	 what is tat
+	return rVoid;
 }
 
 int k_release_memory_block(void *p_mem_blk) {
 #ifdef DEBUG_0 
 	printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
 #endif /* ! DEBUG_0 */
+	// TODO atomic(on) what is that
+	if (p_mem_blk == NULL) return RTX_ERR;
+	if ((p_mem_blk < p_end)||(p_mem_blk + MEMORY_BLOCK_SIZE > gp_stack) return RTX_ERR;
+	struct FreeHeap freed;
+	freed.next = NULL;
+	freed.memory_block = p_mem_blk;
+	if (heapStart == NULL)
+	{
+		heapStart = &freed;
+	}
+	else
+	{
+		if (heapStart->memory_block > p_mem_blk)
+		{
+			freed.next = heapStart;
+			heapStart = &freed;
+		}
+		else
+		{
+			struct FreeHeap* tempPointer = heapStart;
+			while (tempPointer->next != NULL)
+			{
+				if (tempPointer->next->memory_block > p_mem_blk)
+				{
+					freed.next = tempPointer->next;
+					tempPointer->next = &freed;
+					break;
+				}
+			}
+			if (tempPointer->next == NULL)
+			{
+				tempPointer->next = &freed;
+			}
+	}
+	// TODO put top of blocked queue to ready
+	// TODO atomic(off)	 what is tat
 	return RTX_OK;
 }
