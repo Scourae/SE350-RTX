@@ -14,7 +14,7 @@
 #define RTX_OK  0
 
 #define NULL 0
-#define NUM_TEST_PROCS 2
+#define NUM_TEST_PROCS 6
 
 #ifdef DEBUG_0
 #define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
@@ -27,7 +27,7 @@ typedef unsigned char U8;
 typedef unsigned int U32;
 
 /* process states, note we only assume three states in this example */
-typedef enum {NEW = 0, RDY, RUN, BLOCKED, EXIT} PROC_STATE_E;  
+typedef enum {NEW = 0, RDY, RUN, BLOCKED, INTRPT} PROC_STATE_E;  
 
 /*
   PCB data structure definition.
@@ -36,12 +36,10 @@ typedef enum {NEW = 0, RDY, RUN, BLOCKED, EXIT} PROC_STATE_E;
 */
 typedef struct pcb 
 { 
-	//struct pcb *mp_next;  /* next pcb, not used in this example */  
 	U32 *mp_sp;		/* stack pointer of the process */
 	U32 m_pid;		/* process id */
 	PROC_STATE_E m_state;   /* state of the process */
   U32 m_priority;
-  struct pcb *mp_next;
 	// We need PC
 } PCB;
 
@@ -54,4 +52,20 @@ typedef struct proc_init
 	void (*mpf_start_pc) ();/* entry point of the process */    
 } PROC_INIT;
 
+typedef struct pcb_node
+{
+	struct pcb_node *next;
+	PCB *p_pcb;
+} PCB_NODE;
+
+typedef struct queue
+{
+	PCB_NODE *tail;
+	PCB_NODE *head;
+} QUEUE;
+
+void enqueue(QUEUE *q, PCB_NODE *n);
+void dequeue(QUEUE *q);
+PCB_NODE* peek(QUEUE *q);
+int isEmpty(QUEUE *q);
 #endif // ! K_RTX_H_

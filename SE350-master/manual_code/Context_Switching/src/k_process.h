@@ -4,7 +4,7 @@
  * @author: Yiqing Huang
  * @author: Thomas Reidemeister
  * @date:   2014/01/17
- * NOTE: Assuming there are only two user processes in the system
+ * NOTE: Assuming there are 6 user processes in the system
  */
 
 #ifndef K_PROCESS_H_

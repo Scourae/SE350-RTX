@@ -6,7 +6,7 @@
  * @date:   2014/01/17
  * NOTE: The example code shows one way of implementing context switching.
  *       The code only has minimal sanity check. There is no stack overflow check.
- *       The implementation assumes only two simple user processes and NO HARDWARE INTERRUPTS. 
+ *       The implementation assumes six user processes and NO HARDWARE INTERRUPTS. 
  *       The purpose is to show how context switch could be done under stated assumptions. 
  *       These assumptions are not true in the required RTX Project!!!
  *       If you decide to use this piece of code, you need to understand the assumptions and
@@ -30,19 +30,42 @@ PCB *gp_current_process = NULL; /* always point to the current RUN process */
 PROC_INIT g_proc_table[NUM_TEST_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
+QUEUE* ready_priority_queue[4];
+QUEUE blocked_priority_queue;
+
+void enqueue(QUEUE *q, PCB_NODE *n) {
+	n->next = q->head;
+	q->head = n;
+}
+
+void dequeue(QUEUE *q) {
+	PCB_NODE *curHead = q->head;
+	q->head = q->head->next;
+	curHead = NULL; //TODO: does this delete the node from the queue?
+}
+
+PCB_NODE* peek(QUEUE *q) {
+	return q->tail;
+}
+
+int isEmpty(QUEUE *q) {
+	return (q->head == NULL);
+}
+	
 /**
  * @biref: initialize all processes in the system
- * NOTE: We assume there are only two user processes in the system in this example.
+ * NOTE: We assume there are 6 processes in the system.
  */
 void process_init() 
 {
 	int i;
 	U32 *sp;
   
-        /* fill out the initialization table */
+  /* fill out the initialization table */
 	set_test_procs();
 	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_proc_table[i].m_pid = g_test_procs[i].m_pid;
+		g_proc_table[i].m_priority = g_test_procs[i].m_priority;
 		g_proc_table[i].m_stack_size = g_test_procs[i].m_stack_size;
 		g_proc_table[i].mpf_start_pc = g_test_procs[i].mpf_start_pc;
 	}
@@ -52,6 +75,7 @@ void process_init()
 		int j;
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_state = NEW;
+		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
 		
 		sp = alloc_stack((g_proc_table[i]).m_stack_size);
 		*(--sp)  = INITIAL_xPSR;      // user process initial xPSR  
@@ -61,6 +85,8 @@ void process_init()
 		}
 		(gp_pcbs[i])->mp_sp = sp;
 	}
+	
+	// Setting the 
 }
 
 /*@brief: scheduler, pick the pid of the next to run process
@@ -77,9 +103,18 @@ PCB *scheduler(void)
 		return gp_pcbs[0];
 	}
 
+	// TODO: choose the process with the highest priority that is not blocked
 	if ( gp_current_process == gp_pcbs[0] ) {
 		return gp_pcbs[1];
 	} else if ( gp_current_process == gp_pcbs[1] ) {
+		return gp_pcbs[2];
+	} else if ( gp_current_process == gp_pcbs[2] ) {
+		return gp_pcbs[3];
+	} else if ( gp_current_process == gp_pcbs[3] ) {
+		return gp_pcbs[4];
+	} else if ( gp_current_process == gp_pcbs[4] ) {
+		return gp_pcbs[5];
+	} else if ( gp_current_process == gp_pcbs[5] ) {
 		return gp_pcbs[0];
 	} else {
 		return NULL;
@@ -119,6 +154,7 @@ int process_switch(PCB *p_pcb_old)
 			gp_current_process->m_state = RUN;
 			__set_MSP((U32) gp_current_process->mp_sp); //switch to the new proc's stack    
 		} else {
+			// TODO: do we need this?
 			gp_current_process = p_pcb_old; // revert back to the old proc on error
 			return RTX_ERR;
 		} 
@@ -141,9 +177,19 @@ int k_release_processor(void)
 		gp_current_process = p_pcb_old; // revert back to the old process
 		return RTX_ERR;
 	}
-        if ( p_pcb_old == NULL ) {
+  if ( p_pcb_old == NULL ) {
 		p_pcb_old = gp_current_process;
 	}
 	process_switch(p_pcb_old);
 	return RTX_OK;
+}
+
+/**
+ * The Null process with priority 4
+ */
+// Need to set priority of null process to 4 and its PID to 0
+void null_process() {
+	while (1) {
+		k_release_processor();
+	}
 }
