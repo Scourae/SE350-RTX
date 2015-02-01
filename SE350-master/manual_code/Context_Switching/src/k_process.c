@@ -51,6 +51,41 @@ PCB_NODE* peek(QUEUE *q) {
 int isEmpty(QUEUE *q) {
 	return (q->head == NULL);
 }
+
+PCB* findPCB(int process_id){
+	for (int i = 0; i < 4; i++){
+		if(!isEmpty(ready_priority_queue[i]){
+			PCB_NODE *cur = ready_priority_queue[i]->head;
+			while(cur != null){
+				if (cur->p_pcb->m_pid == process_id){
+					return cur->p_pcb;
+				}
+				cur = cur->next;
+			}
+		}
+	}
+	return null;
+}
+
+int set_process_priority(int process_id, int priority){
+	PCB * node = findPCB(process_id);
+	if (process_id == 0 || priority < 0 || priority > 3){
+		return -1;
+	}
+	if (node != null){
+		node->m_priority = priority;
+		return 1;
+	}
+	return -1;
+}
+
+int get_process_priority(int process_id){
+	PCB *node = findPCB(process_id);
+	if (node == null){
+		return -1;
+	}
+	return node->m_priority;
+}
 	
 /**
  * @biref: initialize all processes in the system
