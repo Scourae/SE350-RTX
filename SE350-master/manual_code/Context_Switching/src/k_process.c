@@ -39,10 +39,10 @@ void enqueue(QUEUE *q, PCB_NODE *n) {
 	q->tail = q->tail->next;
 }
 
-void dequeue(QUEUE *q) {
+PCB_NODE* dequeue(QUEUE *q) {
 	PCB_NODE *curHead = q->head;
 	q->head = q->head->next;
-	curHead = NULL; //TODO: does this delete the node from the queue?
+	return curHead;
 }
 
 PCB_NODE* peek(QUEUE *q) {
@@ -76,6 +76,7 @@ int set_process_priority(int process_id, int priority){
 	if (node != null){
 		node->m_priority = priority;
 		return 1;
+		enqueue(ready_priority_queue[node->m_priority], cur);
 	}
 	return -1;
 }
@@ -132,28 +133,46 @@ void process_init()
  *      No other effect on other global variables.
  */
 
+
 PCB *scheduler(void)
 {
-	if (gp_current_process == NULL) {
-		gp_current_process = gp_pcbs[0]; 
-		return gp_pcbs[0];
+	PCB *proc = null;
+	// Return null process there are no processes in the ready queue
+
+	// Search through the blocked queue and move the unblocked processes to the ready queue
+	PCB_NODE* cur = blocked_priority_queue.head;
+	PCB_NODE* prev = blocked_priority_queue.head;
+
+	while (cur != null){
+		if (cur->p_pcb->m_state != BLOCKED){
+			if (blocked_priority_queue.head == cur){
+				prev = cur->next;
+				blocked_priority_queue.head = prev;
+				enqueue(ready_priority_queue[pcb->m_priority], cur);
+				cur = prev;
+			}
+			else {
+				prev->next = cur->next;
+				enqueue(ready_priority_queue[pcb->m_priority], cur);
+				cur = prev->next;
+			}
+		}
+		else {
+			if (cur != prev){
+				prev = prev->next;
+			}
+			cur = cur->next;
+		}
 	}
 
-	// TODO: choose the process with the highest priority that is not blocked
-	if ( gp_current_process == gp_pcbs[0] ) {
-		return gp_pcbs[1];
-	} else if ( gp_current_process == gp_pcbs[1] ) {
-		return gp_pcbs[2];
-	} else if ( gp_current_process == gp_pcbs[2] ) {
-		return gp_pcbs[3];
-	} else if ( gp_current_process == gp_pcbs[3] ) {
-		return gp_pcbs[4];
-	} else if ( gp_current_process == gp_pcbs[4] ) {
-		return gp_pcbs[5];
-	} else if ( gp_current_process == gp_pcbs[5] ) {
-		return gp_pcbs[0];
-	} else {
-		return NULL;
+	for (int i = 0; i < 4; i++){
+		if(!isEmpty(ready_priority_queue[i])){
+			return proc = dequeue(ready_priority_queue[i]);
+		}
+	}
+
+	if (proc == null){
+		return null_process_node->p_pcb;
 	}
 }
 
