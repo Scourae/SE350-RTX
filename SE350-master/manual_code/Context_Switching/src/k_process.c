@@ -29,9 +29,20 @@ PCB *gp_current_process = NULL; /* always point to the current RUN process */
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_TEST_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
+PCB_NODE* null_process_node;
 
 QUEUE* ready_priority_queue[4];
 QUEUE blocked_priority_queue;
+
+/**
+ * The Null process with priority 4
+ */
+// Need to set priority of null process to 4 and its PID to 0
+void null_process() {
+	while (1) {
+		k_release_processor();
+	}
+}
 
 void enqueue(QUEUE *q, PCB_NODE *n) {
 	n->next = NULL;
@@ -97,9 +108,12 @@ void process_init()
 {
 	int i;
 	U32 *sp;
+	PCB_NODE nullProcNodeTemp;
+	PCB nullProcPCBTemp;
   
   /* fill out the initialization table */
 	set_test_procs();
+	
 	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_proc_table[i].m_pid = g_test_procs[i].m_pid;
 		g_proc_table[i].m_priority = g_test_procs[i].m_priority;
@@ -123,7 +137,29 @@ void process_init()
 		(gp_pcbs[i])->mp_sp = sp;
 	}
 	
-	// Setting the 
+	// Creating a PCB for the null process
+	nullProcPCBTemp.m_pid = 0;
+	nullProcPCBTemp.m_priority = 4;
+	nullProcPCBTemp.m_state = NEW;
+	for ( i = 0; i < 6; i++ ) { // R0-R3, R12 are cleared with 0
+		*(--sp) = 0x0;
+	}
+	nullProcPCBTemp.mp_sp = sp;
+	
+	// Creating a PCB_NODE for the null process
+	nullProcNodeTemp.next = NULL;
+	nullProcNodeTemp.p_pcb = &nullProcPCBTemp;
+	
+	// Setting the value of the global PCB_NODE* for null process
+	null_process_node = &nullProcNodeTemp;
+	
+	// Placing the processes in the priority queue
+	for (i = 0; i < NUM_TEST_PROCS; i++) {
+		PCB_NODE newNode;
+		newNode.next = NULL;
+		newNode.p_pcb = gp_pcbs[i];
+		enqueue((ready_priority_queue[(gp_pcbs[i])->m_priority]), &newNode);
+	}
 }
 
 /*@brief: scheduler, pick the pid of the next to run process
@@ -247,14 +283,4 @@ void k_ready_first_blocked(void)
 	int priority = nowReady->p_pcb->m_priority;
 	enqueue(ready_priority_queue[priority], nowReady);
 	nowReady = NULL;
-}
-
-/**
- * The Null process with priority 4
- */
-// Need to set priority of null process to 4 and its PID to 0
-void null_process() {
-	while (1) {
-		k_release_processor();
-	}
 }
