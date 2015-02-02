@@ -34,8 +34,9 @@ QUEUE* ready_priority_queue[4];
 QUEUE blocked_priority_queue;
 
 void enqueue(QUEUE *q, PCB_NODE *n) {
-	n->next = q->head;
-	q->head = n;
+	n->next = NULL;
+	q->tail = n;
+	q->tail = q->tail->next;
 }
 
 void dequeue(QUEUE *q) {
@@ -45,7 +46,7 @@ void dequeue(QUEUE *q) {
 }
 
 PCB_NODE* peek(QUEUE *q) {
-	return q->tail;
+	return q->head;
 }
 
 int isEmpty(QUEUE *q) {
@@ -182,6 +183,35 @@ int k_release_processor(void)
 	}
 	process_switch(p_pcb_old);
 	return RTX_OK;
+}
+
+/**
+ *	Puts the current process into the blocked queue
+ *  Mark the current process as blocked
+ */
+void k_block_current_processs(void)
+{
+	if (gp_current_process)
+	{
+		gp_current_process->m_state = BLOCKED;
+		PCB_NODE currPro;
+		currPro.next = NULL;
+		currPro.p_pcb = gp_current_process;
+		enqueue(&blocked_priority_queue, &currPro);
+	}
+}
+
+/* 
+ * put the first of the blocked queue to ready queue
+ * mark it as ready
+ */
+void k_ready_first_blocked(void)
+{
+	PCB_NODE* nowReady = blocked_priority_queue.peak();
+	int priority = nowReady->p_pcb->m_priority;
+	enqueue(ready_priority_queue[priority], nowReady->p_pcb);
+	blocked_priority_queue.dequeue();
+	nowReady = NULL;
 }
 
 /**

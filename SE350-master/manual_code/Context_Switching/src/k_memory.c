@@ -6,6 +6,7 @@
  */
 
 #include "k_memory.h"
+#include "k_process.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -20,7 +21,7 @@ typedef struct FreeHeap {
 	struct FreeHeap* next;
 	void* memory_block;
 }
-
+void* endHeap;
 struct FreeHeap* heapStart = NULL;
 
 /**
@@ -34,7 +35,7 @@ struct FreeHeap* heapStart = NULL;
           |                           |
           |        HEAP               |
           |                           |
-          |---------------------------|
+          |---------------------------|<--- p_end
           |        PCB 2              |
           |---------------------------|
           |        PCB 1              |
@@ -79,10 +80,12 @@ void memory_init(void)
 		--gp_stack; 
 	}
 	
+	// Calculate end of stack pointers
+	endHeap = gp_stack - USR_SZ_STACK*NUM_TEST_PROCS;
 	// Heap flush
 	U32 flush = 0x00000000;
 	int* target = p_end;
-	while (target != gp_stack)
+	while (target < endHeap)
 	{
 		*target = flush;
 		target+= sizeof(flush);
@@ -95,7 +98,7 @@ void memory_init(void)
 	start.next = NULL;
 	heapStart = &start;
 	struct FreeHeap* tempPointer = heapStart;
-	while (tempPointer->memory_block + 2*MEMORY_BLOCK_SIZE < gp_stack)
+	while (tempPointer->memory_block + 2*MEMORY_BLOCK_SIZE < endHeap)
 	{
 		struct FreeHeap nextPointer;
 		nextPointer.next = NULL;
@@ -132,7 +135,7 @@ int hasHeap()
 {
 	if (heapStart == null)
 		return 0;
-	if (heapStart->next > gp_stack)
+	if (heapStart->next > endHeap)
 		return 0;
 	return 1;
 }
@@ -147,8 +150,8 @@ void *k_request_memory_block(void) {
 		// No more memory to give
 		while(hasHeap == 0)
 		{
-			// put pcb on blocked_resource_q
-			k_release_processor()
+			k_block_current_processs();
+			k_release_processor();
 		}
 	}
 	void* rVoid = heapStart->memory_block;
@@ -163,7 +166,7 @@ int k_release_memory_block(void *p_mem_blk) {
 #endif /* ! DEBUG_0 */
 	// TODO atomic(on) what is that
 	if (p_mem_blk == NULL) return RTX_ERR;
-	if ((p_mem_blk < p_end)||(p_mem_blk + MEMORY_BLOCK_SIZE > gp_stack) return RTX_ERR;
+	if ((p_mem_blk < p_end)||(p_mem_blk + MEMORY_BLOCK_SIZE > endHeap) return RTX_ERR;
 	struct FreeHeap freed;
 	freed.next = NULL;
 	freed.memory_block = p_mem_blk;
@@ -189,13 +192,17 @@ int k_release_memory_block(void *p_mem_blk) {
 					tempPointer->next = &freed;
 					break;
 				}
+				else
+				{
+					tempPointer = tempPointer->next;
+				}
 			}
 			if (tempPointer->next == NULL)
 			{
 				tempPointer->next = &freed;
 			}
 	}
-	// TODO put top of blocked queue to ready
+	k_ready_first_blocked();
 	// TODO atomic(off)	 what is tat
 	return RTX_OK;
 }
