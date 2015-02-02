@@ -39,10 +39,10 @@ void enqueue(QUEUE *q, PCB_NODE *n) {
 	q->tail = q->tail->next;
 }
 
-void dequeue(QUEUE *q) {
+PCB_NODE* dequeue(QUEUE *q) {
 	PCB_NODE *curHead = q->head;
 	q->head = q->head->next;
-	curHead = NULL; //TODO: does this delete the node from the queue?
+	return curHead; //TODO: does this delete the node from the queue?
 }
 
 PCB_NODE* peek(QUEUE *q) {
@@ -54,10 +54,11 @@ int isEmpty(QUEUE *q) {
 }
 
 PCB* findPCB(int process_id){
-	for (int i = 0; i < 4; i++){
-		if(!isEmpty(ready_priority_queue[i]){
+	int i;
+	for (i = 0; i < 4; i++){
+		if(!isEmpty(ready_priority_queue[i])){
 			PCB_NODE *cur = ready_priority_queue[i]->head;
-			while(cur != null){
+			while(cur != NULL){
 				if (cur->p_pcb->m_pid == process_id){
 					return cur->p_pcb;
 				}
@@ -65,7 +66,7 @@ PCB* findPCB(int process_id){
 			}
 		}
 	}
-	return null;
+	return NULL;
 }
 
 int set_process_priority(int process_id, int priority){
@@ -73,7 +74,7 @@ int set_process_priority(int process_id, int priority){
 	if (process_id == 0 || priority < 0 || priority > 3){
 		return -1;
 	}
-	if (node != null){
+	if (node != NULL){
 		node->m_priority = priority;
 		return 1;
 	}
@@ -82,7 +83,7 @@ int set_process_priority(int process_id, int priority){
 
 int get_process_priority(int process_id){
 	PCB *node = findPCB(process_id);
-	if (node == null){
+	if (node == NULL){
 		return -1;
 	}
 	return node->m_priority;
@@ -228,8 +229,8 @@ void k_block_current_processs(void)
 {
 	if (gp_current_process)
 	{
-		gp_current_process->m_state = BLOCKED;
 		PCB_NODE currPro;
+		gp_current_process->m_state = BLOCKED;
 		currPro.next = NULL;
 		currPro.p_pcb = gp_current_process;
 		enqueue(&blocked_priority_queue, &currPro);
@@ -242,10 +243,9 @@ void k_block_current_processs(void)
  */
 void k_ready_first_blocked(void)
 {
-	PCB_NODE* nowReady = blocked_priority_queue.peak();
+	PCB_NODE* nowReady = dequeue(&blocked_priority_queue);
 	int priority = nowReady->p_pcb->m_priority;
-	enqueue(ready_priority_queue[priority], nowReady->p_pcb);
-	blocked_priority_queue.dequeue();
+	enqueue(ready_priority_queue[priority], nowReady);
 	nowReady = NULL;
 }
 

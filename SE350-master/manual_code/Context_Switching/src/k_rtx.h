@@ -65,7 +65,7 @@ typedef struct queue
 } QUEUE;
 
 void enqueue(QUEUE *q, PCB_NODE *n);
-void dequeue(QUEUE *q);
+PCB_NODE* dequeue(QUEUE *q);
 PCB_NODE* peek(QUEUE *q);
 int isEmpty(QUEUE *q);
 #endif // ! K_RTX_H_

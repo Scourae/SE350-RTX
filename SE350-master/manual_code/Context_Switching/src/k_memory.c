@@ -16,13 +16,14 @@
 U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
                /* The first stack starts at the RAM high address */
 	       /* stack grows down. Fully decremental stack */
-#define MEMORY_BLOCK_SIZE 128;
-typedef struct FreeHeap {
+#define MEMORY_BLOCK_SIZE 128
+struct FreeHeap {
 	struct FreeHeap* next;
-	void* memory_block;
-}
-void* endHeap;
+	U8* memory_block;
+};
+U8* endHeap;
 struct FreeHeap* heapStart = NULL;
+U8 *p_end;
 
 /**
  * @brief: Initialize RAM as follows:
@@ -54,9 +55,13 @@ struct FreeHeap* heapStart = NULL;
 
 void memory_init(void)
 {
-	U8 *p_end = (U8 *)&Image$$RW_IRAM1$$ZI$$Limit;
 	int i;
+	U32 flush = 0x00000000;
+	U8* target;
+	struct FreeHeap start;
+	struct FreeHeap* tempPointer;
   
+	p_end = (U8 *)&Image$$RW_IRAM1$$ZI$$Limit;
 	/* 4 bytes padding */
 	p_end += 4;
 
@@ -81,10 +86,9 @@ void memory_init(void)
 	}
 	
 	// Calculate end of stack pointers
-	endHeap = gp_stack - USR_SZ_STACK*NUM_TEST_PROCS;
+	endHeap = (U8*) gp_stack - USR_SZ_STACK*NUM_TEST_PROCS;
 	// Heap flush
-	U32 flush = 0x00000000;
-	int* target = p_end;
+	target = p_end;
 	while (target < endHeap)
 	{
 		*target = flush;
@@ -93,11 +97,10 @@ void memory_init(void)
 	
 	/* allocate memory for heap ADDED BY MIKE*/
 	/* Heap starts at the end of the process control blocks, it ends at stack pointers */
-	struct FreeHeap start;
 	start.memory_block = p_end;
 	start.next = NULL;
 	heapStart = &start;
-	struct FreeHeap* tempPointer = heapStart;
+	tempPointer = heapStart;
 	while (tempPointer->memory_block + 2*MEMORY_BLOCK_SIZE < endHeap)
 	{
 		struct FreeHeap nextPointer;
@@ -133,18 +136,18 @@ U32 *alloc_stack(U32 size_b)
 // 1 if theres heap to allocate, 0 otherwise
 int hasHeap() 
 {
-	if (heapStart == null)
+	if (heapStart == NULL)
 		return 0;
-	if (heapStart->next > endHeap)
+	if (heapStart->next->memory_block > endHeap)
 		return 0;
 	return 1;
 }
 
 void *k_request_memory_block(void) {
+	void* rVoid;
 #ifdef DEBUG_0 
 	printf("k_request_memory_block: entering...\n");
 #endif /* ! DEBUG_0 */
-	// TODO atomic(on) what is that
 	if (hasHeap() == 0)
 	{
 		// No more memory to give
@@ -154,20 +157,18 @@ void *k_request_memory_block(void) {
 			k_release_processor();
 		}
 	}
-	void* rVoid = heapStart->memory_block;
+	rVoid = heapStart->memory_block;
 	heapStart = heapStart->next;
-	// TODO atomic(off)	 what is tat
-	return rVoid;
+	return (void*) rVoid;
 }
 
 int k_release_memory_block(void *p_mem_blk) {
+	struct FreeHeap freed;
 #ifdef DEBUG_0 
 	printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
 #endif /* ! DEBUG_0 */
-	// TODO atomic(on) what is that
 	if (p_mem_blk == NULL) return RTX_ERR;
-	if ((p_mem_blk < p_end)||(p_mem_blk + MEMORY_BLOCK_SIZE > endHeap) return RTX_ERR;
-	struct FreeHeap freed;
+	if (((U8*) p_mem_blk < p_end)||((U8*)p_mem_blk + MEMORY_BLOCK_SIZE > endHeap)) return RTX_ERR;
 	freed.next = NULL;
 	freed.memory_block = p_mem_blk;
 	if (heapStart == NULL)
@@ -201,8 +202,8 @@ int k_release_memory_block(void *p_mem_blk) {
 			{
 				tempPointer->next = &freed;
 			}
+	  }
 	}
 	k_ready_first_blocked();
-	// TODO atomic(off)	 what is tat
 	return RTX_OK;
 }

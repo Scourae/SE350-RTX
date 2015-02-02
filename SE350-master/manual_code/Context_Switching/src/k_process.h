@@ -20,7 +20,7 @@
 
 void process_init(void);               /* initialize all procs in the system */
 PCB *scheduler(void);                  /* pick the pid of the next to run process */
-int k_release_process(void);           /* kernel release_process function */
+int k_release_processor(void);           /* kernel release_process function */
 void k_block_current_processs(void);    /* take the current process and put it into the blocked queue*/
 void k_ready_first_blocked(void);
 
