@@ -29,9 +29,20 @@ PCB *gp_current_process = NULL; /* always point to the current RUN process */
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_TEST_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
+PCB_NODE* null_process_node;
 
 QUEUE* ready_priority_queue[4];
 QUEUE blocked_priority_queue;
+
+/**
+ * The Null process with priority 4
+ */
+// Need to set priority of null process to 4 and its PID to 0
+void null_process() {
+	while (1) {
+		k_release_processor();
+	}
+}
 
 void enqueue(QUEUE *q, PCB_NODE *n) {
 	n->next = NULL;
@@ -54,10 +65,11 @@ int isEmpty(QUEUE *q) {
 }
 
 PCB* findPCB(int process_id){
-	for (int i = 0; i < 4; i++){
-		if(!isEmpty(ready_priority_queue[i]){
+	int i;
+	for (i = 0; i < 4; i++){
+		if(!isEmpty(ready_priority_queue[i])){
 			PCB_NODE *cur = ready_priority_queue[i]->head;
-			while(cur != null){
+			while(cur != NULL){
 				if (cur->p_pcb->m_pid == process_id){
 					return cur->p_pcb;
 				}
@@ -65,7 +77,7 @@ PCB* findPCB(int process_id){
 			}
 		}
 	}
-	return null;
+	return NULL;
 }
 
 int set_process_priority(int process_id, int priority){
@@ -73,7 +85,7 @@ int set_process_priority(int process_id, int priority){
 	if (process_id == 0 || priority < 0 || priority > 3){
 		return -1;
 	}
-	if (node != null){
+	if (node != NULL){
 		node->m_priority = priority;
 		return 1;
 		enqueue(ready_priority_queue[node->m_priority], cur);
@@ -83,7 +95,7 @@ int set_process_priority(int process_id, int priority){
 
 int get_process_priority(int process_id){
 	PCB *node = findPCB(process_id);
-	if (node == null){
+	if (node == NULL){
 		return -1;
 	}
 	return node->m_priority;
@@ -97,9 +109,12 @@ void process_init()
 {
 	int i;
 	U32 *sp;
+	PCB_NODE nullProcNodeTemp;
+	PCB nullProcPCBTemp;
   
   /* fill out the initialization table */
 	set_test_procs();
+	
 	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_proc_table[i].m_pid = g_test_procs[i].m_pid;
 		g_proc_table[i].m_priority = g_test_procs[i].m_priority;
@@ -123,7 +138,29 @@ void process_init()
 		(gp_pcbs[i])->mp_sp = sp;
 	}
 	
-	// Setting the 
+	// Creating a PCB for the null process
+	nullProcPCBTemp.m_pid = 0;
+	nullProcPCBTemp.m_priority = 4;
+	nullProcPCBTemp.m_state = NEW;
+	for ( i = 0; i < 6; i++ ) { // R0-R3, R12 are cleared with 0
+		*(--sp) = 0x0;
+	}
+	nullProcPCBTemp.mp_sp = sp;
+	
+	// Creating a PCB_NODE for the null process
+	nullProcNodeTemp.next = NULL;
+	nullProcNodeTemp.p_pcb = &nullProcPCBTemp;
+	
+	// Setting the value of the global PCB_NODE* for null process
+	null_process_node = &nullProcNodeTemp;
+	
+	// Placing the processes in the priority queue
+	for (i = 0; i < NUM_TEST_PROCS; i++) {
+		PCB_NODE newNode;
+		newNode.next = NULL;
+		newNode.p_pcb = gp_pcbs[i];
+		enqueue((ready_priority_queue[(gp_pcbs[i])->m_priority]), &newNode);
+	}
 }
 
 /*@brief: scheduler, pick the pid of the next to run process
@@ -247,8 +284,8 @@ void k_block_current_processs(void)
 {
 	if (gp_current_process)
 	{
-		gp_current_process->m_state = BLOCKED;
 		PCB_NODE currPro;
+		gp_current_process->m_state = BLOCKED;
 		currPro.next = NULL;
 		currPro.p_pcb = gp_current_process;
 		enqueue(&blocked_priority_queue, &currPro);
@@ -261,19 +298,8 @@ void k_block_current_processs(void)
  */
 void k_ready_first_blocked(void)
 {
-	PCB_NODE* nowReady = blocked_priority_queue.peak();
+	PCB_NODE* nowReady = dequeue(&blocked_priority_queue);
 	int priority = nowReady->p_pcb->m_priority;
-	enqueue(ready_priority_queue[priority], nowReady->p_pcb);
-	blocked_priority_queue.dequeue();
+	enqueue(ready_priority_queue[priority], nowReady);
 	nowReady = NULL;
-}
-
-/**
- * The Null process with priority 4
- */
-// Need to set priority of null process to 4 and its PID to 0
-void null_process() {
-	while (1) {
-		k_release_processor();
-	}
 }
