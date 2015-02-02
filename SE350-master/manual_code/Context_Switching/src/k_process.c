@@ -29,7 +29,7 @@ PCB *gp_current_process = NULL; /* always point to the current RUN process */
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_TEST_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
-PCB_NODE* null_process_node;
+PCB_NODE* null_process_node = NULL;
 
 QUEUE* ready_priority_queue[4];
 QUEUE blocked_priority_queue;
@@ -242,7 +242,6 @@ int process_switch(PCB *p_pcb_old)
 			gp_current_process->m_state = RUN;
 			__set_MSP((U32) gp_current_process->mp_sp); //switch to the new proc's stack    
 		} else {
-			// TODO: do we need this?
 			gp_current_process = p_pcb_old; // revert back to the old proc on error
 			return RTX_ERR;
 		} 
