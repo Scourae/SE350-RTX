@@ -26,6 +26,7 @@
 PCB **gp_pcbs;                  /* array of pcbs */
 PCB *gp_current_process = NULL; /* always point to the current RUN process */
 
+
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_TEST_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
@@ -33,6 +34,8 @@ PCB_NODE* null_process_node = NULL;
 
 QUEUE ready_priority_queue[4];
 QUEUE blocked_priority_queue;
+
+PCB_NODE newNode [NUM_TEST_PROCS];
 
 /**
  * The Null process with priority 4
@@ -46,17 +49,26 @@ void null_process() {
 
 void enqueue(QUEUE *q, PCB_NODE *n) {
 	if (q->head == NULL)
+	{
 		q->head = n;
-	n->next = NULL;
-	q->tail = n;
-	q->tail = q->tail->next;
+		q->tail = n;
+	}
+	else
+	{
+		q->tail->next = n;
+		q->tail = q->tail->next;
+	}
 }
 
 PCB_NODE* dequeue(QUEUE *q) {
 	PCB_NODE *curHead = q->head;
 	if (q->head == q->tail)
+	{
+		q->head = NULL;
 		q->tail = NULL;
-	q->head = q->head->next;
+	}
+	else
+		q->head = q->head->next;
 	return curHead;
 }
 
@@ -141,11 +153,11 @@ void process_init()
 		}
 		(gp_pcbs[i])->mp_sp = sp;
 	}
-	
+
 	// Creating a PCB for the null process
 	nullProcPCBTemp.m_pid = 0;
 	nullProcPCBTemp.m_priority = 4;
-	nullProcPCBTemp.m_state = NEW;
+	nullProcPCBTemp.m_state = RDY;
 	for ( i = 0; i < 6; i++ ) { // R0-R3, R12 are cleared with 0
 		*(--sp) = 0x0;
 	}
@@ -157,20 +169,18 @@ void process_init()
 	
 	// Setting the value of the global PCB_NODE* for null process
 	null_process_node = &nullProcNodeTemp;
-	
 	// Placing the processes in the priority queue
-	
+
 	for (i = 0; i < 4; i++){
 		ready_priority_queue[i].head = NULL;
 		ready_priority_queue[i].tail = NULL;
 	}
 	
 	for (i = 0; i < NUM_TEST_PROCS; i++) {
-		PCB_NODE newNode;
-		newNode.next = NULL;
-		//gp_pcbs[i]->m_state = RDY;
-		newNode.p_pcb = gp_pcbs[i];
-		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), &newNode);
+		newNode[i].next = NULL;
+		gp_pcbs[i]->m_state = RDY;
+		newNode[i].p_pcb = gp_pcbs[i];
+		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), &newNode[i]);
 	}
 	
 	// Setting everything in the blocked queue to be null
