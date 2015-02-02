@@ -64,14 +64,14 @@ int isEmpty(QUEUE *q) {
 	return (q->head == NULL);
 }
 
-PCB* findPCB(int process_id){
+PCB_NODE* findPCB(int process_id){
 	int i;
 	for (i = 0; i < 4; i++){
 		if(!isEmpty(ready_priority_queue[i])){
 			PCB_NODE *cur = ready_priority_queue[i]->head;
 			while(cur != NULL){
 				if (cur->p_pcb->m_pid == process_id){
-					return cur->p_pcb;
+					return cur;
 				}
 				cur = cur->next;
 			}
@@ -81,24 +81,24 @@ PCB* findPCB(int process_id){
 }
 
 int set_process_priority(int process_id, int priority){
-	PCB * node = findPCB(process_id);
+	PCB_NODE * node = findPCB(process_id);
 	if (process_id == 0 || priority < 0 || priority > 3){
 		return -1;
 	}
 	if (node != NULL){
-		node->m_priority = priority;
+		node->p_pcb->m_priority = priority;
+		enqueue(ready_priority_queue[node->p_pcb->m_priority], node);
 		return 1;
-		enqueue(ready_priority_queue[node->m_priority], cur);
 	}
 	return -1;
 }
 
 int get_process_priority(int process_id){
-	PCB *node = findPCB(process_id);
+	PCB_NODE *node = findPCB(process_id);
 	if (node == NULL){
 		return -1;
 	}
-	return node->m_priority;
+	return node->p_pcb->m_priority;
 }
 	
 /**
@@ -173,24 +173,23 @@ void process_init()
 
 PCB *scheduler(void)
 {
-	PCB *proc = null;
 	// Return null process there are no processes in the ready queue
-
+	int i = 0;
 	// Search through the blocked queue and move the unblocked processes to the ready queue
 	PCB_NODE* cur = blocked_priority_queue.head;
 	PCB_NODE* prev = blocked_priority_queue.head;
 
-	while (cur != null){
+	while (cur != NULL){
 		if (cur->p_pcb->m_state != BLOCKED){
 			if (blocked_priority_queue.head == cur){
 				prev = cur->next;
 				blocked_priority_queue.head = prev;
-				enqueue(ready_priority_queue[pcb->m_priority], cur);
+				enqueue(ready_priority_queue[cur->p_pcb->m_priority], cur);
 				cur = prev;
 			}
 			else {
 				prev->next = cur->next;
-				enqueue(ready_priority_queue[pcb->m_priority], cur);
+				enqueue(ready_priority_queue[cur->p_pcb->m_priority], cur);
 				cur = prev->next;
 			}
 		}
@@ -202,15 +201,12 @@ PCB *scheduler(void)
 		}
 	}
 
-	for (int i = 0; i < 4; i++){
+	for (i = 0; i < 4; i++){
 		if(!isEmpty(ready_priority_queue[i])){
-			return proc = dequeue(ready_priority_queue[i]);
+			return dequeue(ready_priority_queue[i])->p_pcb;
 		}
 	}
-
-	if (proc == null){
-		return null_process_node->p_pcb;
-	}
+	return null_process_node->p_pcb;
 }
 
 /*@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
