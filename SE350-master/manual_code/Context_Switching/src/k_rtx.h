@@ -14,7 +14,7 @@
 #define RTX_OK  0
 
 #define NULL 0
-#define NUM_TEST_PROCS 2
+#define NUM_TEST_PROCS 1
 
 #ifdef DEBUG_0
 #define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
@@ -49,7 +49,8 @@ typedef struct proc_init
 	int m_pid;	        /* process id */ 
 	int m_priority;         /* initial priority, not used in this example. */ 
 	int m_stack_size;       /* size of stack in words */
-	void (*mpf_start_pc) ();/* entry point of the process */    
+	void (*mpf_start_pc) ();/* entry point of the process */ 
+	//U32 *mp_sp;		/* stack pointer of the process */	
 } PROC_INIT;
 
 typedef struct pcb_node
