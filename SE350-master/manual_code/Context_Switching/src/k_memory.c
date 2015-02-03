@@ -53,10 +53,6 @@ U8 *p_end;
 void memory_init(void)
 {
 	int i;
-	U32 flush = 0x00000000;
-	U8* target;
-	struct FreeHeap start;
-	struct FreeHeap* tempPointer;
   
 	p_end = (U8 *)&Image$$RW_IRAM1$$ZI$$Limit;
 	/* 4 bytes padding */
@@ -147,7 +143,7 @@ int mem_empty() {
 }
 
 void *k_request_memory_block(void) {
-	void* rVoid = beginHeap;
+	U8* rVoid = beginHeap;
 	int i;
 #ifdef DEBUG_0 
 	printf("k_request_memory_block: entering...\n");
@@ -178,9 +174,9 @@ int k_release_memory_block(void *p_mem_blk) {
 	printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
 #endif /* ! DEBUG_0 */
 	if (p_mem_blk == NULL) return RTX_ERR;
-	if (((U8*) p_mem_blk < beginHeap)||((U8*)p_mem_blk + MEMORY_BLOCK_SIZE > (beginHeap+NUM_OF_MEMBLOCKS*MEMORY_BLOCK_SIZE)) return RTX_ERR;
-	if ((p_mem_blk - beginHeap)%MEMORY_BLOCK_SIZE != 0) return RTX_ERR;
-	index = (p_mem_blk - beginHeap)/MEMORY_BLOCK_SIZE;
+	if (((U8*) p_mem_blk < beginHeap)||((U8*)p_mem_blk + MEMORY_BLOCK_SIZE > (beginHeap+NUM_OF_MEMBLOCKS*MEMORY_BLOCK_SIZE))) return RTX_ERR;
+	if (((U8*)p_mem_blk - beginHeap)%MEMORY_BLOCK_SIZE != 0) return RTX_ERR;
+	index = ((U8*)p_mem_blk - beginHeap)/MEMORY_BLOCK_SIZE;
 	*(beginMemMap + index) = 0;
 	k_ready_first_blocked();
 	return RTX_OK;
