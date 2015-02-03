@@ -67,9 +67,9 @@ void memory_init(void)
 
 	/* allocate memory for pcb pointers   */
 	gp_pcbs = (PCB **)p_end;
-	p_end += NUM_TEST_PROCS * sizeof(PCB *);
+	p_end += (NUM_TEST_PROCS+1) * sizeof(PCB *);
   
-	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
+	for ( i = 0; i < NUM_TEST_PROCS + 1; i++ ) {
 		gp_pcbs[i] = (PCB *)p_end;
 		p_end += sizeof(PCB); 
 	}
@@ -86,15 +86,16 @@ void memory_init(void)
 	}
 	
 	// Calculate end of stack pointers
-	endHeap = (U8*) gp_stack - USR_SZ_STACK*NUM_TEST_PROCS;
+	endHeap = (U8*) gp_stack - USR_SZ_STACK*(NUM_TEST_PROCS + 1);
 	// Heap flush
+	/*
 	target = p_end;
 	while (target < endHeap)
 	{
 		*target = flush;
 		target+= sizeof(flush);
 	}
-	
+	*/
 	/* allocate memory for heap ADDED BY MIKE*/
 	/* Heap starts at the end of the process control blocks, it ends at stack pointers */
 	start.memory_block = p_end;
