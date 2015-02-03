@@ -17,12 +17,9 @@ U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
                /* The first stack starts at the RAM high address */
 	       /* stack grows down. Fully decremental stack */
 #define MEMORY_BLOCK_SIZE 128
-struct FreeHeap {
-	struct FreeHeap* next;
-	U8* memory_block;
-};
-U8* endHeap;
-struct FreeHeap* heapStart = NULL;
+#define NUM_OF_MEMBLOCKS 20
+U8* beginHeap;
+U8* beginMemMap;
 U8 *p_end;
 
 /**
@@ -85,30 +82,12 @@ void memory_init(void)
 		--gp_stack; 
 	}
 	
-	// Calculate end of stack pointers
-	endHeap = (U8*) gp_stack - USR_SZ_STACK*(NUM_TEST_PROCS + 1);
-	// Heap flush
-	/*
-	target = p_end;
-	while (target < endHeap)
+	// Calculate beginning of heap pointers
+	beginMemMap = (U8*) p_end;
+	beginHeap = (U8*) beginMemMap + NUM_OF_MEMBLOCKS;
+	for (i = 0; i < 20; i++)
 	{
-		*target = flush;
-		target+= sizeof(flush);
-	}
-	*/
-	/* allocate memory for heap ADDED BY MIKE*/
-	/* Heap starts at the end of the process control blocks, it ends at stack pointers */
-	start.memory_block = p_end;
-	start.next = NULL;
-	heapStart = &start;
-	tempPointer = heapStart;
-	while (tempPointer->memory_block + 2*MEMORY_BLOCK_SIZE < endHeap)
-	{
-		struct FreeHeap nextPointer;
-		nextPointer.next = NULL;
-		nextPointer.memory_block = tempPointer->memory_block + MEMORY_BLOCK_SIZE;
-		tempPointer->next = &nextPointer;
-		tempPointer = tempPointer->next;
+		*(beginMemMap+i) = 0;
 	}
 }
 
@@ -133,78 +112,67 @@ U32 *alloc_stack(U32 size_b)
 	}
 	return sp;
 }
-
+/*
 // 1 if theres heap to allocate, 0 otherwise
 int hasHeap() 
 {
 	if (heapStart == NULL)
 		return 0;
-	if (heapStart->next->memory_block > endHeap)
+	if (heapStart->next->memory_block > beginHeap)
 		return 0;
+	return 1;
+}
+*/
+
+// 0 its not empty, 1 it is
+int mem_empty() {
+	int i;
+	for (i = 0;i < NUM_OF_MEMBLOCKS; i++)
+	{
+		if (*(beginMemMap + i) == 0)
+		{
+			return 0;
+		}
+	}
 	return 1;
 }
 
 void *k_request_memory_block(void) {
-	void* rVoid;
+	void* rVoid = beginHeap;
+	int i;
 #ifdef DEBUG_0 
 	printf("k_request_memory_block: entering...\n");
 #endif /* ! DEBUG_0 */
-	if (hasHeap() == 0)
+	if (mem_empty() == 1)
 	{
 		// No more memory to give
-		while(hasHeap == 0)
+		while(mem_empty() == 1)
 		{
 			k_block_current_processs();
 			k_release_processor();
 		}
 	}
-	rVoid = heapStart->memory_block;
-	heapStart = heapStart->next;
-	return (void*) rVoid;
+	for (i = 0; i < NUM_OF_MEMBLOCKS; i++)
+	{
+		if (*(beginMemMap + i) == 0)
+		{
+			*(beginMemMap + i) = 1;
+			break;
+		}
+	}
+	return (void*) (rVoid+i);
 }
 
 int k_release_memory_block(void *p_mem_blk) {
-	struct FreeHeap freed;
+	int index;
 #ifdef DEBUG_0 
 	printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
 #endif /* ! DEBUG_0 */
 	if (p_mem_blk == NULL) return RTX_ERR;
-	if (((U8*) p_mem_blk < p_end)||((U8*)p_mem_blk + MEMORY_BLOCK_SIZE > endHeap)) return RTX_ERR;
-	freed.next = NULL;
-	freed.memory_block = p_mem_blk;
-	if (heapStart == NULL)
-	{
-		heapStart = &freed;
-	}
-	else
-	{
-		if (heapStart->memory_block > p_mem_blk)
-		{
-			freed.next = heapStart;
-			heapStart = &freed;
-		}
-		else
-		{
-			struct FreeHeap* tempPointer = heapStart;
-			while (tempPointer->next != NULL)
-			{
-				if (tempPointer->next->memory_block > p_mem_blk)
-				{
-					freed.next = tempPointer->next;
-					tempPointer->next = &freed;
-					break;
-				}
-				else
-				{
-					tempPointer = tempPointer->next;
-				}
-			}
-			if (tempPointer->next == NULL)
-			{
-				tempPointer->next = &freed;
-			}
-	  }
-	}
+	if (((U8*) p_mem_blk < beginHeap)||((U8*)p_mem_blk + MEMORY_BLOCK_SIZE > (beginHeap+NUM_OF_MEMBLOCKS*MEMORY_BLOCK_SIZE)) return RTX_ERR;
+	if ((p_mem_blk - beginHeap)%MEMORY_BLOCK_SIZE != 0) return RTX_ERR;
+	index = (p_mem_blk - beginHeap)/MEMORY_BLOCK_SIZE;
+	*(beginMemMap + index) = 0;
 	k_ready_first_blocked();
 	return RTX_OK;
 }
