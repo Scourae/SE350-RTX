@@ -219,7 +219,7 @@ PCB *scheduler(void)
 	PCB* test2 = NULL;
 	
 	test2 = gp_pcbs[NUM_TEST_PROCS];
-	
+	/*
 	// Search through the blocked queue and move the unblocked processes to the ready queue
 	cur = blocked_priority_queue.head;
 	prev = blocked_priority_queue.head;
@@ -245,7 +245,7 @@ PCB *scheduler(void)
 			cur = cur->next;
 		}
 	}
-
+	*/
 	test2 = gp_pcbs[NUM_TEST_PROCS];
 	
 	for (i = 0; i < 4; i++){
@@ -270,11 +270,30 @@ PCB *scheduler(void)
 int process_switch(PCB *p_pcb_old) 
 {
 	PROC_STATE_E state;
-	PCB * dummy;
+	QUEUE dummy2;
+	PCB* dummy = gp_current_process;
 	
-	state = gp_current_process->m_state;
+	dummy2 = ready_priority_queue[p_pcb_old->m_priority];
 
-	dummy = gp_pcbs[NUM_TEST_PROCS];
+	state = gp_current_process->m_state;
+	
+	if(p_pcb_old->m_state == RUN){
+		if(p_pcb_old->m_priority != 4){
+			// create a process node
+			PCB_NODE node;
+			node.next = NULL;
+			p_pcb_old->m_state = RDY;
+			node.p_pcb = p_pcb_old;
+			enqueue(&ready_priority_queue[p_pcb_old->m_priority], &node);
+		}
+	}
+	
+	if (gp_current_process->m_pid == 0x1){
+		gp_current_process->mp_sp = (U32 *) 0x10007EE0;
+	}
+	else {
+		gp_current_process->mp_sp = (U32 *) 0x10007DE0;
+	}
 	
 	if (state == NEW) {
 		if (gp_current_process != p_pcb_old && p_pcb_old->m_state != NEW) {
@@ -287,7 +306,6 @@ int process_switch(PCB *p_pcb_old)
 	} 
 	
 	/* The following will only execute if the if block above is FALSE */
-	dummy = gp_pcbs[NUM_TEST_PROCS];
 	if (gp_current_process != p_pcb_old) {
 		if (state == RDY){ 		
 			p_pcb_old->m_state = RDY; 
@@ -301,13 +319,12 @@ int process_switch(PCB *p_pcb_old)
 			__rte();  // pop exception stack frame from the stack for a new processes
 	}
 	
-	dummy = gp_pcbs[NUM_TEST_PROCS];
-	
 	if(gp_current_process == NULL){
 		gp_current_process = gp_pcbs[0];
 	}
 	return RTX_OK;
 }
+
 /**
  * @brief release_processor(). 
  * @return RTX_ERR on error and zero on success
