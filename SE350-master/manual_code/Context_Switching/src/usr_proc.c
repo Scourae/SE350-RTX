@@ -16,104 +16,138 @@
 
 /* initialization table item */
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
+int passed = 0;
 
 void set_test_procs() {
-	//int i;
-	/*for( i = 0; i < NUM_TEST_PROCS; i++ ) {
-		g_test_procs[i].m_pid=(U32)(i+1);
-		g_test_procs[i].m_priority=LOWEST;
-		g_test_procs[i].m_stack_size=0x100;
-	}*/
-	
 	g_test_procs[0].m_pid=(U32)(1);
 	g_test_procs[0].m_priority=LOW;
 	g_test_procs[0].m_stack_size=0x100;
-	
-	
 	g_test_procs[1].m_pid=(U32)(2);
 	g_test_procs[1].m_priority=LOW;
 	g_test_procs[1].m_stack_size=0x100;
-	
 	g_test_procs[2].m_pid=(U32)(3);
-	g_test_procs[2].m_priority=LOWEST;
+	g_test_procs[2].m_priority=LOW;
 	g_test_procs[2].m_stack_size=0x100;
-	
+	g_test_procs[3].m_pid=(U32)(4);
+	g_test_procs[3].m_priority=LOW;
+	g_test_procs[3].m_stack_size=0x100
+	g_test_procs[4].m_pid=(U32)(5);
+	g_test_procs[4].m_priority=LOW;
+	g_test_procs[4].m_stack_size=0x100;
+	g_test_procs[5].m_pid=(U32)(6);
+	g_test_procs[5].m_priority=LOW;
+	g_test_procs[5].m_stack_size=0x100;
+  
 	g_test_procs[0].mpf_start_pc = &proc1;
 	g_test_procs[1].mpf_start_pc = &proc2;
 	g_test_procs[2].mpf_start_pc = &proc3;
+	g_test_procs[3].mpf_start_pc = &proc4;
+	g_test_procs[4].mpf_start_pc = &proc5;
+	g_test_procs[5].mpf_start_pc = &proc6;
 }
 
 
 /**
- * @brief: a process that prints five uppercase letters
- *         and then yields the cpu.
+ * @brief: a process that switches to another one
  */
 void proc1(void)
 {
+	uart0_put_string("G009_test: START\n");
+	uart0_put_string("G009_test: total 6 tests\n");
+	set_process_priority(1, 0);
+	set_process_priority(2, 0);
 	int i = 0;
-	int ret_val = 10;
-	while ( 1) {
-		if ( i != 0 && i%5 == 0 ) {
-			uart0_put_string("\n\r");
-			ret_val = release_processor();
-#ifdef DEBUG_0
-			//printf("proc1: ret_val=%d\n", ret_val);
-#endif /* DEBUG_0 */
-		}
-		uart0_put_char('A' + i%26);
+	while (i != 2) {
+		release_processor();
 		i++;
 	}
+	uart0_put_string("G009_test: test 1 OK\n");
+	set_process_priority(1, 3);
+	passed++;
+	while (1)
+	{
+		release_processor();
+	}	
 }
 
 /**
- * @brief: a process that prints five numbers
- *         and then yields the cpu.
+ * @brief: a process that alternates with the first one
  */
 void proc2(void)
 {
 	int i = 0;
-	int ret_val = 20;
-	while ( 1) {
-		if ( i != 0 && i%5 == 0 ) {
-			uart0_put_string("\n\r");
-			ret_val = release_processor();
-#ifdef DEBUG_0
-			//printf("proc2: ret_val=%d\n", ret_val);
-#endif /* DEBUG_0 */
-			if ( i== 50){
-				set_process_priority(3, HIGH);
-			}
-		}
-		uart0_put_char('0' + i%10);
-		i++;
-	}
-}
-
-void proc3(void)
-{
-	int i = 0;
-	int j = 0;
-	int ret_val = 10;
-	while ( 1) {
-		for (j = 0; j < 20000; j++){
-			j++;
-		}
-		if ( i != 0 && i%5 == 0 ) {
-			uart0_put_char('0' + get_process_priority(2));
-			uart0_put_string("\n\r");
-			ret_val = release_processor();
-#ifdef DEBUG_0
-			//printf("proc3: ret_val=%d\n", ret_val);
-#endif /* DEBUG_0 */
-		}
-		uart0_put_char('a' + i%26);
-		i++;
-	}
-}
-
-void proc4(void){
-	while (1) {
-		request_memory_block();
+	while (i != 2) {
 		release_processor();
+		i++;
 	}
+	uart0_put_string("G009_test: test 2 OK\n");
+	set_process_priority(2, 3);
+	passed++;
+	while (1)
+	{
+		release_processor();
+	}	
 }
+
+/**
+ * Process that aquires one block of memory and prints it
+ */
+ void proc3(void)
+ {
+	void * pointer;
+	int status;
+	pointer = request_memory_block();
+	status = release_memory_block(pointer);
+	if (status == 0)
+	{
+		uart0_put_string("G009_test: test 4 OK\n");
+		passed++;
+	}
+	else
+	{
+		 uart0_put_string("G009_test: test 4 FAIL\n");
+	}
+	set_process_priority(3, 3);
+	while (1)
+	{
+		release_processor();
+	}	
+}
+
+/**
+ * Change priority of current process
+ */
+void proc6(void)
+{
+	int prioSwitch = 0;
+	int pid = 6;
+	int currPrio;
+	int failed = 0;
+	char result;
+	char failure;
+	set_process_priority(pid, prioSwitch);
+	currPrio = get_process_priority(pid);
+	if (prioSwitch != currPrio)
+	{
+		failed = 1;
+		uart0_put_string("G009_test: test 6 FAIL\n");
+	}
+	}
+	if (failed == 0)
+	{
+		uart0_put_string("G009_test: test 6 OK\n");
+		passed++;
+	}
+	set_process_priority(pid, 3);
+	result = '0' + passed;
+	failure = '0' + 6-passed;
+	uart0_put_string("G009_test: " + result+ "/6 tests OK\n");
+	uart0_put_string("G009_test: " + failure+ "/6 tests FAIL\n");
+	uart0_put_string("G009_test: END\n");
+	while (1)
+	{
+		release_processor();
+	}	
+}
+
+  
