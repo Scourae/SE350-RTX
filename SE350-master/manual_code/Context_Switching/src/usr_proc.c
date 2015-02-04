@@ -26,12 +26,12 @@ void set_test_procs() {
 	}*/
 	
 	g_test_procs[0].m_pid=(U32)(1);
-	g_test_procs[0].m_priority=HIGH;
+	g_test_procs[0].m_priority=LOW;
 	g_test_procs[0].m_stack_size=0x100;
 	
 	
 	g_test_procs[1].m_pid=(U32)(2);
-	g_test_procs[1].m_priority=LOWEST;
+	g_test_procs[1].m_priority=LOW;
 	g_test_procs[1].m_stack_size=0x100;
 	
 	g_test_procs[2].m_pid=(U32)(3);
@@ -57,7 +57,7 @@ void proc1(void)
 			uart0_put_string("\n\r");
 			ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc1: ret_val=%d\n", ret_val);
+			//printf("proc1: ret_val=%d\n", ret_val);
 #endif /* DEBUG_0 */
 		}
 		uart0_put_char('A' + i%26);
@@ -78,8 +78,11 @@ void proc2(void)
 			uart0_put_string("\n\r");
 			ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc2: ret_val=%d\n", ret_val);
+			//printf("proc2: ret_val=%d\n", ret_val);
 #endif /* DEBUG_0 */
+			if ( i== 50){
+				set_process_priority(3, HIGH);
+			}
 		}
 		uart0_put_char('0' + i%10);
 		i++;
@@ -89,13 +92,18 @@ void proc2(void)
 void proc3(void)
 {
 	int i = 0;
+	int j = 0;
 	int ret_val = 10;
 	while ( 1) {
+		for (j = 0; j < 20000; j++){
+			j++;
+		}
 		if ( i != 0 && i%5 == 0 ) {
+			uart0_put_char('0' + get_process_priority(2));
 			uart0_put_string("\n\r");
 			ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
+			//printf("proc3: ret_val=%d\n", ret_val);
 #endif /* DEBUG_0 */
 		}
 		uart0_put_char('a' + i%26);

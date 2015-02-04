@@ -1,6 +1,7 @@
 /**
  * @file:   k_memory.c
  * @brief:  kernel memory managment routines
+ * @author: Angad Kashyap, Vishal Bollu, Mike Wang and Tong Tong
  * @author: Yiqing Huang
  * @date:   2014/01/17
  */
@@ -9,13 +10,13 @@
 #include "k_process.h"
 
 #ifdef DEBUG_0
-#include "printf.h"
+	#include "printf.h"
 #endif /* ! DEBUG_0 */
 
 /* ----- Global Variables ----- */
-U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
-               /* The first stack starts at the RAM high address */
-	       /* stack grows down. Fully decremental stack */
+U32 *gp_stack; 	/* The last allocated stack low address. 8 bytes aligned */
+								/* The first stack starts at the RAM high address */
+								/* stack grows down. Fully decremental stack */
 #define MEMORY_BLOCK_SIZE 128
 #define NUM_OF_MEMBLOCKS 20
 U8* beginHeap;
@@ -33,11 +34,25 @@ U8 *p_end;
           |                           |
           |        HEAP               |
           |                           |
-          |---------------------------|<--- p_end
+					|---------------------------|<--- p_end
+					|             .	            |
+					|             . 	          |
+					|             . 	          |
+          |---------------------------|
+          |        PCB_NODE 2         |
+          |---------------------------|
+          |        PCB_NODE 1         |
+					|---------------------------|
+          |             .	            |
+					|             . 	          |
+					|             . 	          |
+          |---------------------------|
           |        PCB 2              |
           |---------------------------|
           |        PCB 1              |
           |---------------------------|
+					|        PCB_NODE pointers  |
+          |---------------------------|<--- gp_pcb_nodes
           |        PCB pointers       |
           |---------------------------|<--- gp_pcbs
           |        Padding            |
@@ -75,13 +90,13 @@ void memory_init(void)
 		gp_pcb_nodes[i] = (PCB_NODE *)p_end;
 		p_end += sizeof(PCB_NODE); 
 	}
+	
 #ifdef DEBUG_0  
 	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
 	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
 #endif
 	
 	/* prepare for alloc_stack() to allocate memory for stacks */
-	
 	gp_stack = (U32 *)RAM_END_ADDR;
 	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */
 		--gp_stack; 
@@ -90,6 +105,7 @@ void memory_init(void)
 	// Calculate beginning of heap pointers
 	beginMemMap = (U8*) p_end;
 	beginHeap = (U8*) beginMemMap + NUM_OF_MEMBLOCKS;
+	
 	for (i = 0; i < 20; i++)
 	{
 		*(beginMemMap+i) = 0;
@@ -97,7 +113,7 @@ void memory_init(void)
 }
 
 /**
- * @brief: allocate stack for a process, align to 8 bytes boundary
+ * Allocates stack for a process, align to 8 bytes boundary
  * @param: size, stack size in bytes
  * @return: The top of the stack (i.e. high address)
  * POST:  gp_stack is updated.
@@ -117,19 +133,11 @@ U32 *alloc_stack(U32 size_b)
 	}
 	return sp;
 }
-/*
-// 1 if theres heap to allocate, 0 otherwise
-int hasHeap() 
-{
-	if (heapStart == NULL)
-		return 0;
-	if (heapStart->next->memory_block > beginHeap)
-		return 0;
-	return 1;
-}
-*/
 
-// 0 its not empty, 1 it is
+/**
+ * Checks whether the memory is empty
+ * Returns 1 if memory is empty or 0 otherwise
+ */
 int mem_empty() {
 	int i;
 	for (i = 0;i < NUM_OF_MEMBLOCKS; i++)
@@ -142,12 +150,17 @@ int mem_empty() {
 	return 1;
 }
 
+/**
+ * Requests a memory block
+ */
 void *k_request_memory_block(void) {
 	U8* rVoid = beginHeap;
 	int i;
-#ifdef DEBUG_0 
-	printf("k_request_memory_block: entering...\n");
-#endif /* ! DEBUG_0 */
+	
+	#ifdef DEBUG_0 
+		printf("k_request_memory_block: entering...\n");
+	#endif /* ! DEBUG_0 */
+	
 	if (mem_empty() == 1)
 	{
 		// No more memory to give
@@ -157,6 +170,7 @@ void *k_request_memory_block(void) {
 			k_release_processor();
 		}
 	}
+	
 	for (i = 0; i < NUM_OF_MEMBLOCKS; i++)
 	{
 		if (*(beginMemMap + i) == 0)
@@ -168,14 +182,28 @@ void *k_request_memory_block(void) {
 	return (void*) (rVoid+i);
 }
 
+/**
+ * Releases a memory block
+ */
 int k_release_memory_block(void *p_mem_blk) {
 	int index;
-#ifdef DEBUG_0 
-	printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
-#endif /* ! DEBUG_0 */
-	if (p_mem_blk == NULL) return RTX_ERR;
-	if (((U8*) p_mem_blk < beginHeap)||((U8*)p_mem_blk + MEMORY_BLOCK_SIZE > (beginHeap+NUM_OF_MEMBLOCKS*MEMORY_BLOCK_SIZE))) return RTX_ERR;
-	if (((U8*)p_mem_blk - beginHeap)%MEMORY_BLOCK_SIZE != 0) return RTX_ERR;
+	
+	#ifdef DEBUG_0 
+		printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
+	#endif /* ! DEBUG_0 */
+	
+	if (p_mem_blk == NULL){
+		return RTX_ERR;
+	}
+	
+	if (((U8*) p_mem_blk < beginHeap)||((U8*)p_mem_blk + MEMORY_BLOCK_SIZE > (beginHeap+NUM_OF_MEMBLOCKS*MEMORY_BLOCK_SIZE))){ 
+		return RTX_ERR;
+	}
+	
+	if (((U8*)p_mem_blk - beginHeap)%MEMORY_BLOCK_SIZE != 0){
+		return RTX_ERR;
+	}
+	
 	index = ((U8*)p_mem_blk - beginHeap)/MEMORY_BLOCK_SIZE;
 	*(beginMemMap + index) = 0;
 	k_ready_first_blocked();
