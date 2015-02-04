@@ -91,11 +91,6 @@ void memory_init(void)
 		p_end += sizeof(PCB_NODE); 
 	}
 	
-#ifdef DEBUG_0  
-	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
-	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
-#endif
-	
 	/* prepare for alloc_stack() to allocate memory for stacks */
 	gp_stack = (U32 *)RAM_END_ADDR;
 	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */
