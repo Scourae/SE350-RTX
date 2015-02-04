@@ -128,14 +128,17 @@ int set_process_priority(int process_id, int priority){
 		return RTX_ERR;
 	}
 	node = gp_pcb_nodes[process_id];
-
-	if (remove(&ready_priority_queue[node->p_pcb->m_priority], node) != RTX_OK){
-		return RTX_ERR;
-	}
 	
-	node->p_pcb->m_priority = priority;
-	enqueue(&ready_priority_queue[node->p_pcb->m_priority], node);
+	if (node->p_pcb->m_state != BLOCKED && node->p_pcb != gp_current_process){
+		if (remove(&ready_priority_queue[node->p_pcb->m_priority], node) != RTX_OK){
+			return RTX_ERR;
+		}
+		node->p_pcb->m_priority = priority;
+		enqueue(&ready_priority_queue[node->p_pcb->m_priority], node);
+	}
 
+	node->p_pcb->m_priority = priority;
+	
 	return RTX_OK;
 }
 
@@ -307,11 +310,10 @@ void k_block_current_processs(void)
 {
 	if (gp_current_process)
 	{
-		PCB_NODE currPro;
+		PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
 		gp_current_process->m_state = BLOCKED;
-		currPro.next = NULL;
-		currPro.p_pcb = gp_current_process;
-		enqueue(&blocked_priority_queue, &currPro);
+		currPro->next = NULL;
+		enqueue(&blocked_priority_queue, currPro);
 	}
 }
 
@@ -321,10 +323,12 @@ void k_block_current_processs(void)
  */
 void k_ready_first_blocked(void)
 {
-	int priority = 0;
-	PCB_NODE* nowReady = dequeue(&blocked_priority_queue);
-	(nowReady->p_pcb)->m_state = RDY;
-	priority = nowReady->p_pcb->m_priority;
-	enqueue(&ready_priority_queue[priority], nowReady);
-	nowReady = NULL;
+	if (!isEmpty(&blocked_priority_queue))
+	{
+		int priority = 0;
+		PCB_NODE* nowReady = dequeue(&blocked_priority_queue);
+		(nowReady->p_pcb)->m_state = RDY;
+		priority = nowReady->p_pcb->m_priority;
+		enqueue(&ready_priority_queue[priority], nowReady);
+	}
 }

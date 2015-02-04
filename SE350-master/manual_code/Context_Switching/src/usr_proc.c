@@ -17,6 +17,8 @@
 /* initialization table item */
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
+void * memory_blocks[20];
+
 void set_test_procs() {
 	//int i;
 	/*for( i = 0; i < NUM_TEST_PROCS; i++ ) {
@@ -29,18 +31,17 @@ void set_test_procs() {
 	g_test_procs[0].m_priority=LOW;
 	g_test_procs[0].m_stack_size=0x100;
 	
-	
 	g_test_procs[1].m_pid=(U32)(2);
 	g_test_procs[1].m_priority=LOW;
 	g_test_procs[1].m_stack_size=0x100;
 	
 	g_test_procs[2].m_pid=(U32)(3);
-	g_test_procs[2].m_priority=LOWEST;
+	g_test_procs[2].m_priority=LOW;
 	g_test_procs[2].m_stack_size=0x100;
 	
-	g_test_procs[0].mpf_start_pc = &proc1;
-	g_test_procs[1].mpf_start_pc = &proc2;
-	g_test_procs[2].mpf_start_pc = &proc3;
+	g_test_procs[0].mpf_start_pc = &proc4;
+	g_test_procs[1].mpf_start_pc = &proc5;
+	g_test_procs[2].mpf_start_pc = &proc1;
 }
 
 
@@ -52,7 +53,7 @@ void proc1(void)
 {
 	int i = 0;
 	int ret_val = 10;
-	while ( 1) {
+	//while ( 1) {
 		if ( i != 0 && i%5 == 0 ) {
 			uart0_put_string("\n\r");
 			ret_val = release_processor();
@@ -62,7 +63,7 @@ void proc1(void)
 		}
 		uart0_put_char('A' + i%26);
 		i++;
-	}
+	//}
 }
 
 /**
@@ -112,8 +113,37 @@ void proc3(void)
 }
 
 void proc4(void){
-	while (1) {
-		request_memory_block();
-		release_processor();
+	void* temp;
+	int i = 0;
+	for(i = 0; i < 20; i++){
+		memory_blocks[i] = request_memory_block();
 	}
+	set_process_priority(2, HIGH);
+	set_process_priority(1, HIGH);
+	temp = request_memory_block();
+	uart0_put_string("G009_test: test 4 OK\n\r");
+	release_memory_block(temp);
+	set_process_priority(1, LOWEST);
+	release_processor();
 }
+
+void proc5(void){
+	int result;
+	void * temp;
+	int i = 0;
+	for(i = 0; i < 20; i++){
+		result = release_memory_block(memory_blocks[i]);
+		if (result != 0)
+		{
+			uart0_put_string("G009_test: test 5 FAIL\n\r");
+			set_process_priority(2, LOWEST);
+			set_process_priority(1, LOWEST);
+		}
+	}
+	temp = request_memory_block();
+	uart0_put_string("G009_test: test 5 OK\n\r");
+	release_memory_block(temp);
+	set_process_priority(2, LOWEST);
+	release_processor();
+}
+

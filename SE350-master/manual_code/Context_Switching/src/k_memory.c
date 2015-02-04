@@ -157,18 +157,10 @@ void *k_request_memory_block(void) {
 	U8* rVoid = beginHeap;
 	int i;
 	
-	#ifdef DEBUG_0 
-		printf("k_request_memory_block: entering...\n");
-	#endif /* ! DEBUG_0 */
-	
-	if (mem_empty() == 1)
+	while(mem_empty() == 1)
 	{
-		// No more memory to give
-		while(mem_empty() == 1)
-		{
-			k_block_current_processs();
-			k_release_processor();
-		}
+		k_block_current_processs();
+		k_release_processor();
 	}
 	
 	for (i = 0; i < NUM_OF_MEMBLOCKS; i++)
@@ -179,7 +171,12 @@ void *k_request_memory_block(void) {
 			break;
 		}
 	}
-	return (void*) (rVoid+i);
+	
+	/*#ifdef DEBUG_0 
+		printf("k_request_memory_block: @ 0x%x\n\r", rVoid+i*MEMORY_BLOCK_SIZE);
+	#endif */
+	
+	return (void*) (rVoid+i*MEMORY_BLOCK_SIZE);
 }
 
 /**
@@ -188,9 +185,9 @@ void *k_request_memory_block(void) {
 int k_release_memory_block(void *p_mem_blk) {
 	int index;
 	
-	#ifdef DEBUG_0 
-		printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
-	#endif /* ! DEBUG_0 */
+	/*#ifdef DEBUG_0 
+		printf("k_release_memory_block: releasing block @ 0x%x\n\r", p_mem_blk);
+	#endif */
 	
 	if (p_mem_blk == NULL){
 		return RTX_ERR;
