@@ -48,4 +48,13 @@ extern int k_release_memory_block(void *);
 #define release_memory_block(p_mem_blk) _release_memory_block((U32)k_release_memory_block, p_mem_blk)
 extern int _release_memory_block(U32 p_func, void *p_mem_blk) __SVC_0;
 
+extern int k_get_process_priority(int pid);
+#define get_process_priority(pid) _get_process_priority((U32)k_get_process_priority, pid)
+extern int _get_process_priority(U32 p_func, int pid) __SVC_0;
+/* __SVC_0 can also be put at the end of the function declaration */
+
+extern int k_set_process_priority(int pid, int prio);
+#define set_process_priority(pid, prio) _set_process_priority((U32)k_set_process_priority, pid, prio)
+extern int _set_process_priority(U32 p_func, int pid, int prio) __SVC_0;
+
 #endif /* !RTX_H_ */

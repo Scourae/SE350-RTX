@@ -122,22 +122,26 @@ int isEmpty(QUEUE *q) {
  * Sets the process priority
  * Returns -1 if it fails or 0 otherwise
  */
-int set_process_priority(int process_id, int priority){
+int k_set_process_priority(int process_id, int priority){
 	PCB_NODE * node = NULL;
 	if (process_id < 1 || process_id > NUM_TEST_PROCS || priority < 0 || priority > 3){
 		return RTX_ERR;
 	}
 	node = gp_pcb_nodes[process_id];
 	
-	if (node->p_pcb->m_state != BLOCKED && node->p_pcb != gp_current_process){
-		if (remove(&ready_priority_queue[node->p_pcb->m_priority], node) != RTX_OK){
-			return RTX_ERR;
+	if(node->p_pcb->m_priority != priority){
+		if (node->p_pcb->m_state != BLOCKED && node->p_pcb != gp_current_process){
+			if (remove(&ready_priority_queue[node->p_pcb->m_priority], node) != RTX_OK){
+				return RTX_ERR;
+			}
+			node->p_pcb->m_priority = priority;
+			enqueue(&ready_priority_queue[node->p_pcb->m_priority], node);
 		}
-		node->p_pcb->m_priority = priority;
-		enqueue(&ready_priority_queue[node->p_pcb->m_priority], node);
-	}
 
-	node->p_pcb->m_priority = priority;
+		node->p_pcb->m_priority = priority;
+		uart0_put_string("priority set\n\r");
+		k_release_processor();
+	}
 	
 	return RTX_OK;
 }
@@ -146,7 +150,7 @@ int set_process_priority(int process_id, int priority){
  * Gets the process priority
  * Returns the process priority value or -1 if it does not find a process with the provide process ID
  */
-int get_process_priority(int process_id){
+int k_get_process_priority(int process_id){
 	PCB_NODE *node = gp_pcb_nodes[process_id];
 	if (node == NULL){
 		return RTX_ERR;
@@ -280,6 +284,8 @@ int k_release_processor(void)
 {
 	PCB *p_pcb_old = NULL;
 	
+	uart0_put_string("in release processor\n\r");
+	
 	p_pcb_old = gp_current_process;
 	if (gp_current_process != NULL)
 	{
@@ -297,8 +303,14 @@ int k_release_processor(void)
   if ( p_pcb_old == NULL ) {
 		p_pcb_old = gp_current_process;
 	}
+	
+	uart0_put_string("going to process switch\n\r");
+	
 	process_switch(p_pcb_old);
 	gp_current_process->m_state = RUN;
+	
+	uart0_put_string("done process switching\n\r");
+	
 	return RTX_OK;
 }
 
