@@ -21,12 +21,12 @@
 #endif /* DEBUG_0 */
 
 /* ----- Global Variables ----- */
-PCB **gp_pcbs; //array of pcb pointers
+extern PCB **gp_pcbs; //array of pcb pointers
 PCB_NODE **gp_pcb_nodes;  // actual pcb node array
 PCB *gp_current_process = NULL; // always point to the current RUN process
 
 /* Process Initialization Table */
-PROC_INIT g_proc_table[NUM_TEST_PROCS + 1];
+PROC_INIT g_proc_table[NUM_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 /* ----- Queue Declarations ----- */
@@ -126,7 +126,7 @@ void process_init()
 	}
   
 	// initilize exception stack frame (i.e. initial context) for each process
-	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
+	for ( i = 0; i < NUM_PROCS; i++ ) {
 		int j;
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_state = NEW;
