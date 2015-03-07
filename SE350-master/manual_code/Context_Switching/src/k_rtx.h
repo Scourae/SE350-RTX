@@ -35,10 +35,10 @@ typedef enum {NEW = 0, RDY, RUN, BLOCKED_ON_MEMORY, BLOCKED_ON_RECEIVE, INTRPT} 
 
 typedef struct envelope {
 	struct envelope* nextMsg;
-	U32 sender_pid;
-	U32 destination_pid;
-	U32 message_type;
-	U32 delay;
+	U8 sender_pid;
+	U8 destination_pid;
+	U8 message_type;
+	U8 delay;
 	void* message;
 } ENVELOPE;
 
