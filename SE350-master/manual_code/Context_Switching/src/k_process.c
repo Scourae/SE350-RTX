@@ -44,6 +44,7 @@ void null_process() {
  * Enqueues the provided PCB node in the given queue
  */
 void enqueue(QUEUE *q, PCB_NODE *n) {
+	n->next = NULL;
 	if (q->head == NULL)
 	{
 		q->head = n;
@@ -69,6 +70,7 @@ PCB_NODE* dequeue(QUEUE *q) {
 	}
 	else
 		q->head = q->head->next;
+	curHead->next = NULL;
 	return curHead;
 }
 
@@ -139,7 +141,7 @@ int k_set_process_priority(int process_id, int priority){
 		}
 
 		node->p_pcb->m_priority = priority;
-		uart0_put_string("priority set\n\r");
+		//uart0_put_string("priority set\n\r");
 		k_release_processor();
 	}
 	
@@ -284,7 +286,7 @@ int k_release_processor(void)
 {
 	PCB *p_pcb_old = NULL;
 	
-	uart0_put_string("in release processor\n\r");
+	//uart0_put_string("in release processor\n\r");
 	
 	p_pcb_old = gp_current_process;
 	if (gp_current_process != NULL)
@@ -304,12 +306,12 @@ int k_release_processor(void)
 		p_pcb_old = gp_current_process;
 	}
 	
-	uart0_put_string("going to process switch\n\r");
+	//uart0_put_string("going to process switch\n\r");
 	
 	process_switch(p_pcb_old);
 	gp_current_process->m_state = RUN;
 	
-	uart0_put_string("done process switching\n\r");
+	//uart0_put_string("done process switching\n\r");
 	
 	return RTX_OK;
 }
