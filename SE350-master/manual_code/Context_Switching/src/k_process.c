@@ -21,8 +21,8 @@
 #endif /* DEBUG_0 */
 
 /* ----- Global Variables ----- */
-extern PCB **gp_pcbs; //array of pcb pointers
-PCB_NODE **gp_pcb_nodes;  // actual pcb node array
+PCB **gp_pcbs = NULL; //array of pcb pointers
+PCB_NODE **gp_pcb_nodes = NULL;  // actual pcb node array
 PCB *gp_current_process = NULL; // always point to the current RUN process
 
 /* Process Initialization Table */
