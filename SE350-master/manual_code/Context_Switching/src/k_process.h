@@ -23,7 +23,7 @@ PCB *scheduler(void);                  /* pick the pid of the next to run proces
 int k_release_processor(void);           /* kernel release_process function */
 void k_block_current_processs(void);    /* take the current process and put it into the blocked queue*/
 void k_ready_first_blocked(void);
-void get_PCB_block(int pid);
+PCB* get_PCB_block(int pid);
 
 extern U32 *alloc_stack(U32 size_b);   /* allocate stack for a process */
 extern void __rte(void);               /* pop exception stack frame */

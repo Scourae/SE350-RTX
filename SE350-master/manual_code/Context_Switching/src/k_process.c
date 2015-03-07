@@ -31,7 +31,8 @@ extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 /* ----- Queue Declarations ----- */
 QUEUE ready_priority_queue[5];
-QUEUE blocked_priority_queue;
+QUEUE blocked_on_memory_queue[5];
+QUEUE blocked_on_receive_queue;
 
 /**
  * Gets the process priority
@@ -143,7 +144,7 @@ void process_init()
 		(gp_pcb_nodes[i])->p_pcb = gp_pcbs[i];
 	}
 	
-	// Setting all queues to be empty
+	// Setting all ready queues to be empty
 	for (i = 0; i < 5; i++){
 		ready_priority_queue[i].head = NULL;
 		ready_priority_queue[i].tail = NULL;
@@ -155,8 +156,14 @@ void process_init()
 	}
 
 	// Setting everything in the blocked queue to be null
-	blocked_priority_queue.head = NULL;
-	blocked_priority_queue.tail = NULL;	
+	blocked_on_receive_queue.head = NULL;
+	blocked_on_receive_queue.tail = NULL;
+	
+	// Setting blocked on memory queues to be empty
+	for (i = 0; i < 5; i++){
+		blocked_on_memory_queue[i].head = NULL;
+		blocked_on_memory_queue[i].tail = NULL;
+	}
 }
 
 /**
@@ -251,7 +258,7 @@ int k_set_process_priority(int process_id, int priority){
 	node = gp_pcb_nodes[process_id];
 	
 	if(node->p_pcb->m_priority != priority){
-		if (node->p_pcb->m_state != BLOCKED && node->p_pcb != gp_current_process){
+		if (node->p_pcb->m_state != BLOCKED_ON_MEMORY && node->p_pcb != gp_current_process){
 			if (remove(&ready_priority_queue[node->p_pcb->m_priority], node) != RTX_OK){
 				return RTX_ERR;
 			}
@@ -372,9 +379,9 @@ void k_block_current_processs(void)
 	if (gp_current_process)
 	{
 		PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
-		gp_current_process->m_state = BLOCKED;
+		gp_current_process->m_state = BLOCKED_ON_MEMORY;
 		currPro->next = NULL;
-		enqueue(&blocked_priority_queue, currPro);
+		enqueue(&blocked_on_memory_queue[currPro->p_pcb->m_priority], currPro);
 	}
 }
 
@@ -384,13 +391,16 @@ void k_block_current_processs(void)
  */
 void k_ready_first_blocked(void)
 {
-	if (!isEmpty(&blocked_priority_queue))
-	{
-		int priority = 0;
-		PCB_NODE* nowReady = dequeue(&blocked_priority_queue);
-		(nowReady->p_pcb)->m_state = RDY;
-		priority = nowReady->p_pcb->m_priority;
-		enqueue(&ready_priority_queue[priority], nowReady);
+	int i;
+	
+	for (i = 0; i < 5; i++){
+		if (!isEmpty(&blocked_on_memory_queue[i])){
+			int priority = 0;
+			PCB_NODE* nowReady = dequeue(&blocked_on_memory_queue[i]);
+			(nowReady->p_pcb)->m_state = RDY;
+			priority = nowReady->p_pcb->m_priority;
+			enqueue(&ready_priority_queue[priority], nowReady);
+		}
 	}
 }
 
