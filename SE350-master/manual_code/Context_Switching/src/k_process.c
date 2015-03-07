@@ -332,3 +332,14 @@ void k_ready_first_blocked(void)
 		enqueue(&ready_priority_queue[priority], nowReady);
 	}
 }
+
+PCB* get_PCB_block(int pid)
+{
+	int i;
+	for (i = 0; i < NUM_TEST_PROCS + 1; i ++)
+	{
+		if ((gp_pcbs[i])->m_pid == pid)
+			return (gp_pcbs[i]);
+	}
+	return NULL;
+}
