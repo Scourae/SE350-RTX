@@ -199,5 +199,6 @@ int k_release_memory_block(void *p_mem_blk) {
 	index = ((U8*)p_mem_blk - beginHeap)/MEMORY_BLOCK_SIZE;
 	*(beginMemMap + index) = 0;
 	k_ready_first_blocked();
+	k_release_processor();
 	return RTX_OK;
 }

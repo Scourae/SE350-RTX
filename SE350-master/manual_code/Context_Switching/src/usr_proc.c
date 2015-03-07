@@ -62,17 +62,20 @@ void proc1(void)
 	int i = 0;
 	uart0_put_string("G009_test: START\n\r");
 	uart0_put_string("G009_test: total 6 tests\n\r");
-	set_process_priority(1, 0);
 	set_process_priority(2, 0);
 	while (i != 2) {
-		release_processor();
+		uart0_put_string("back to process 1");
+		set_process_priority(2, 0);
+		set_process_priority(1, 3);
 		i++;
 	}
 	uart0_put_string("G009_test: test 1 OK\n\r");
-	set_process_priority(1, 3);
 	passed++;
+	set_process_priority(1, 3);
+	set_process_priority(2, 0);
 	while (1)
 	{
+		uart0_put_string("In process 1\n\r");
 		release_processor();
 	}	
 }
@@ -83,15 +86,20 @@ void proc1(void)
 void proc2(void)
 {
 	int i = 0;
+	uart0_put_string("start process 2\n\r");
 	while (i != 2) {
-		release_processor();
+		uart0_put_string("back to process 2");
+		set_process_priority(1, 0); 
+		set_process_priority(2, 3);
 		i++;
 	}
 	uart0_put_string("G009_test: test 2 OK\n\r");
-	set_process_priority(2, 3);
 	passed++;
+	set_process_priority(1, 0);
+	set_process_priority(2, 3);
 	while (1)
 	{
+		uart0_put_string("In process 2\n\r");
 		release_processor();
 	}	
 }
@@ -103,6 +111,7 @@ void proc2(void)
  {
 	void * pointer;
 	int status;
+	set_process_priority(3, HIGH);
 	pointer = request_memory_block();
 	status = release_memory_block(pointer);
 	if (status == 0)
