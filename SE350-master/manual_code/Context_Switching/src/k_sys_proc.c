@@ -22,7 +22,7 @@ void null_proc(void) {
 		k_release_processor();
 	}
 }
-
+/*
 void enqueue_env(PCB *p, ENVELOPE *env) {
 	env->nextMsg = NULL;
 	if (p->first_msg == NULL)
@@ -35,35 +35,37 @@ void enqueue_env(PCB *p, ENVELOPE *env) {
 		p->last_msg->nextMsg = env;
 		p->last_msg = p->last_msg->nextMsg;
 	}
-}
+}*/
 
 /**
  * Dequeues the head of the queue
  * Returns a pointer to the dequeued PCB node
  */
-ENVELOPE* dequeue_env(PCB *p) {
-	ENVELOPE *curHead = p->first_msg;
-	if (p->first_msg == p->last_msg)
+
+
+ENVELOPE* timer_dequeue(ENV_QUEUE *p) {
+	ENVELOPE *curHead = p->head;
+	if (msg_empty(p)) return NULL;
+	if (p->head == p->tail)
 	{
-		p->first_msg = NULL;
-		p->last_msg = NULL;
+		p->head = NULL;
+		p->tail = NULL;
 	}
 	else
-		p->first_msg = p->first_msg->nextMsg;
+		p->head = p->head->nextMsg;
 	curHead->nextMsg = NULL;
 	return curHead;
 }
 
-int is_empty_env(PCB *p) {
-	return (p->first_msg == NULL);
-}
+/*int is_empty_env(ENV_QUEUE *q) {
+	return (q->head == NULL);
+}*/
 
 ENVELOPE* k_non_blocking_receive_message(int pid){
-	PCB* timer;
-	
-	timer = gp_pcbs[pid];
-	if(!is_empty_env(timer)){
-		return dequeue_env(timer);
+	PCB* timer = gp_pcbs[pid];
+	ENV_QUEUE* env_q = &(timer->env_q);
+	if(!msg_empty(env_q)){
+		return timer_dequeue(env_q);
 	}
 	return NULL;
 }

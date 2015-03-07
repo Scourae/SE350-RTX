@@ -45,38 +45,38 @@ PCB_NODE* remove_from_blocked_list(int pid)
 	}
 }
 
- int msg_empty(PCB* q)
+ int msg_empty(ENV_QUEUE* q)
  {
- 	return (q->first_msg == NULL)?1:0;
+ 	return (q->head == NULL)?1:0;
  }
 
- void msg_enqueue(PCB* q, ENVELOPE* msg) {
+ void msg_enqueue(ENV_QUEUE* q, ENVELOPE* msg) {
  	msg->nextMsg = NULL;
- 	if (q->first_msg == NULL)
+ 	if (q->head == NULL)
  	{
- 		q->first_msg = msg;
- 		q->last_msg = msg;
+ 		q->head = msg;
+ 		q->tail = msg;
  	}
  	else
  	{
- 		q->last_msg->nextMsg = msg;
- 		q->last_msg = q->last_msg->nextMsg;
+ 		q->tail->nextMsg = msg;
+ 		q->tail = q->tail->nextMsg;
  	}
  }
 
- ENVELOPE* msg_dequeue(PCB* q, int* sender_ID) {
- 	ENVELOPE* target = q->first_msg;
-	ENVELOPE* previous = q->first_msg;
+ ENVELOPE* msg_dequeue(ENV_QUEUE* q, int* sender_ID) {
+ 	ENVELOPE* target = q->head;
+	ENVELOPE* previous = q->head;
 	if (msg_empty(q) == 1) return NULL;
  	if ((sender_ID == NULL)||(target->sender_pid == *sender_ID))
  	{
- 		if (q->first_msg == q->last_msg)
+ 		if (q->head == q->tail)
  		{
- 			q->first_msg = NULL;
- 			q->last_msg = NULL;
+ 			q->head = NULL;
+ 			q->tail = NULL;
  		}
  		else
- 			q->first_msg = q->first_msg->nextMsg;
+ 			q->head = q->head->nextMsg;
  		target->nextMsg = NULL;
  		return target;
  	}
@@ -91,10 +91,10 @@ PCB_NODE* remove_from_blocked_list(int pid)
  			previous = previous->nextMsg;
  		}
  		if (target == NULL) return NULL;
- 		if (target == q->last_msg)
+ 		if (target == q->tail)
  		{
  			previous->nextMsg = NULL;
- 			q->last_msg = previous;
+ 			q->tail = previous;
  		}
  		else
  			previous->nextMsg = previous->nextMsg->nextMsg;
@@ -109,7 +109,7 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		ENVELOPE* msg = (ENVELOPE*) message_envelope;
 		PCB* targetPCB = gp_pcb_nodes[msg->destination_pid]->p_pcb;
   	msg->nextMsg = NULL;
-  	msg_enqueue(targetPCB, msg);
+  	msg_enqueue(&(targetPCB->env_q), msg);
   	if (targetPCB->m_state == BLOCKED_ON_RECEIVE)
   	{
   		remove_from_blocked_list(msg->destination_pid);
@@ -125,7 +125,7 @@ PCB_NODE* remove_from_blocked_list(int pid)
 	ENVELOPE* msg;
 	PCB* gp_current_process = k_get_current_process();
 	PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
-	while(msg_empty(gp_current_process))
+	while(msg_empty(&(gp_current_process->env_q)))
 	{
 		if (gp_current_process->m_state != BLOCKED_ON_RECEIVE)
 		{
@@ -135,6 +135,6 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		}
 		k_release_processor();
 	}
-	msg = msg_dequeue(gp_current_process, sender_ID);
+	msg = msg_dequeue(&(gp_current_process->env_q), sender_ID);
 	return (void*) msg;
  }

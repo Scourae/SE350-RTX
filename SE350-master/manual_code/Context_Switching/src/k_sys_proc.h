@@ -5,11 +5,6 @@
 
 extern volatile U32 g_timer_count;
 
-typedef struct env_queue{
-	ENVELOPE* head;
-	ENVELOPE* tail;
-} ENV_QUEUE;
-
 /* indefinitely releases the processor */
 void null_proc(void);
 

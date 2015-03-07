@@ -42,6 +42,11 @@ typedef struct envelope {
 	void* message;
 } ENVELOPE;
 
+typedef struct env_queue{
+	ENVELOPE* head;
+	ENVELOPE* tail;
+} ENV_QUEUE;
+
 /*
   PCB data structure definition.
   You may want to add your own member variables
@@ -53,8 +58,7 @@ typedef struct pcb
 	U32 m_pid;		/* process id */
 	PROC_STATE_E m_state;   /* state of the process */
 	U32 m_priority;
-	ENVELOPE* first_msg;
-	ENVELOPE* last_msg;
+	ENV_QUEUE env_q;
 } PCB;
 
 /* initialization table item */
@@ -83,4 +87,8 @@ void enqueue(QUEUE *q, PCB_NODE *n);
 PCB_NODE* dequeue(QUEUE *q);
 PCB_NODE* peek(QUEUE *q);
 int isEmpty(QUEUE *q);
+
+ENVELOPE* msg_dequeue(ENV_QUEUE* q, int* sender_ID);
+void msg_enqueue(ENV_QUEUE* q, ENVELOPE* msg);
+int msg_empty(ENV_QUEUE* q);
 #endif // ! K_RTX_H_
