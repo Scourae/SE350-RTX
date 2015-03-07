@@ -404,13 +404,15 @@ void k_ready_first_blocked(void)
 	}
 }
 
-PCB* get_PCB_block(int pid)
+void k_ready_process(int pid)
 {
-	int i;
-	for (i = 0; i < NUM_TEST_PROCS + 1; i ++)
-	{
-		if ((gp_pcbs[i])->m_pid == pid)
-			return (gp_pcbs[i]);
-	}
-	return NULL;
+	PCB_NODE* currPro = gp_pcb_nodes[pid];
+	gp_current_process->m_state = RDY;
+	currPro->next = NULL;
+	enqueue(&ready_priority_queue[currPro->p_pcb->m_priority], currPro);
+}
+
+PCB* k_get_current_process()
+{
+	return gp_current_process;
 }
