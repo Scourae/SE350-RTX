@@ -13,6 +13,8 @@
 #include <system_LPC17xx.h>
 #include "uart_polling.h"
 #include "k_process.h"
+#include "k_sys_proc.h"
+#include "k_usr_proc.h"
 
 #ifdef DEBUG_0
 	#include "printf.h"
@@ -32,12 +34,129 @@ QUEUE ready_priority_queue[5];
 QUEUE blocked_priority_queue;
 
 /**
- * The Null Process with priority 4
+ * Gets the process priority
+ * Returns the process priority value or -1 if it does not find a process with the provide process ID
  */
-void null_process() {
-	while (1) {
-		k_release_processor();
+int k_get_process_priority(int process_id){
+	PCB_NODE *node = gp_pcb_nodes[process_id];
+	if (node == NULL){
+		return RTX_ERR;
 	}
+	return node->p_pcb->m_priority;
+}
+	
+/**
+ * Initialize all processes in the system
+ */
+void process_init() 
+{
+	int i;
+	U32 *sp;
+	
+  /* Fill out the initialization table */
+	set_test_procs();
+	
+	// Setting the Null Process in the initialization table
+	g_proc_table[0].m_pid = 0;
+	g_proc_table[0].m_priority = 4;
+	g_proc_table[0].mpf_start_pc = &null_proc;
+	g_proc_table[0].m_stack_size = 0x100;
+	
+	// Setting the stress_test_a Process in the initialization table
+	g_proc_table[7].m_pid = 7;
+	g_proc_table[7].m_priority = 4;
+	g_proc_table[7].mpf_start_pc = &stress_test_a;
+	g_proc_table[7].m_stack_size = 0x100;
+	
+	// Setting the stress_test_b Process in the initialization table
+	g_proc_table[8].m_pid = 8;
+	g_proc_table[8].m_priority = 4;
+	g_proc_table[8].mpf_start_pc = &stress_test_b;
+	g_proc_table[8].m_stack_size = 0x100;
+	
+	// Setting the stress_test_c Process in the initialization table
+	g_proc_table[9].m_pid = 9;
+	g_proc_table[9].m_priority = 4;
+	g_proc_table[9].mpf_start_pc = &stress_test_c;
+	g_proc_table[9].m_stack_size = 0x100;
+	
+	// Setting the set_priority_proc Process in the initialization table
+	g_proc_table[10].m_pid = 10;
+	g_proc_table[10].m_priority = 4;
+	g_proc_table[10].mpf_start_pc = &set_priority_proc;
+	g_proc_table[10].m_stack_size = 0x100;
+	
+	// Setting the wall_clock_display Process in the initialization table
+	g_proc_table[11].m_pid = 11;
+	g_proc_table[11].m_priority = 4;
+	g_proc_table[11].mpf_start_pc = &wall_clock_display;
+	g_proc_table[11].m_stack_size = 0x100;
+	
+	// Setting the kcd_proc Process in the initialization table
+	g_proc_table[12].m_pid = 12;
+	g_proc_table[12].m_priority = 4;
+	g_proc_table[12].mpf_start_pc = &kcd_proc;
+	g_proc_table[12].m_stack_size = 0x100;
+	
+	// Setting the crt_proc Process in the initialization table
+	g_proc_table[13].m_pid = 13;
+	g_proc_table[13].m_priority = 4;
+	g_proc_table[13].mpf_start_pc = &crt_proc;
+	g_proc_table[13].m_stack_size = 0x100;
+	
+	// Setting the timer_i_proc Process in the initialization table
+	g_proc_table[14].m_pid = 14;
+	g_proc_table[14].m_priority = 4;
+	g_proc_table[14].mpf_start_pc = &timer_i_proc;
+	g_proc_table[14].m_stack_size = 0x100;
+	
+	// Setting the uart_i_proc Process in the initialization table
+	g_proc_table[15].m_pid = 15;
+	g_proc_table[15].m_priority = 4;
+	g_proc_table[15].mpf_start_pc = &uart_i_proc;
+	g_proc_table[15].m_stack_size = 0x100;
+	
+	// Setting the user processes in the initialization table
+	for ( i = 1; i < 7; i++ ) {
+		g_proc_table[i].m_pid = g_test_procs[i-1].m_pid;
+		g_proc_table[i].m_priority = g_test_procs[i-1].m_priority;
+		g_proc_table[i].m_stack_size = g_test_procs[i-1].m_stack_size;
+		g_proc_table[i].mpf_start_pc = g_test_procs[i-1].mpf_start_pc;
+	}
+  
+	// initilize exception stack frame (i.e. initial context) for each process
+	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
+		int j;
+		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
+		(gp_pcbs[i])->m_state = NEW;
+		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
+		
+		sp = alloc_stack((g_proc_table[i]).m_stack_size);
+		*(--sp)  = INITIAL_xPSR; // user process initial xPSR  
+		*(--sp)  = (U32)((g_proc_table[i]).mpf_start_pc); // PC contains the entry point of the process
+		for ( j = 0; j < 6; j++ ) { // R0-R3, R12 are cleared with 0
+			*(--sp) = 0x0;
+		}
+		(gp_pcbs[i])->mp_sp = sp;
+		
+		(gp_pcb_nodes[i])->next = NULL;
+		(gp_pcb_nodes[i])->p_pcb = gp_pcbs[i];
+	}
+	
+	// Setting all queues to be empty
+	for (i = 0; i < 5; i++){
+		ready_priority_queue[i].head = NULL;
+		ready_priority_queue[i].tail = NULL;
+	}
+	
+	// Adding processes to the appropriate ready queue
+	for (i = 0; i < NUM_TEST_PROCS+1; i++) {
+		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), gp_pcb_nodes[i]);
+	}
+
+	// Setting everything in the blocked queue to be null
+	blocked_priority_queue.head = NULL;
+	blocked_priority_queue.tail = NULL;	
 }
 
 /**
@@ -146,78 +265,6 @@ int k_set_process_priority(int process_id, int priority){
 	}
 	
 	return RTX_OK;
-}
-
-/**
- * Gets the process priority
- * Returns the process priority value or -1 if it does not find a process with the provide process ID
- */
-int k_get_process_priority(int process_id){
-	PCB_NODE *node = gp_pcb_nodes[process_id];
-	if (node == NULL){
-		return RTX_ERR;
-	}
-	return node->p_pcb->m_priority;
-}
-	
-/**
- * Initialize all processes in the system
- */
-void process_init() 
-{
-	int i;
-	U32 *sp;
-	
-  /* Fill out the initialization table */
-	set_test_procs();
-	
-	// Setting the Null Process in the initialization table
-	g_proc_table[0].m_pid = 0;
-	g_proc_table[0].m_priority = 4;
-	g_proc_table[0].mpf_start_pc = &null_process;
-	g_proc_table[0].m_stack_size = 0x100;
-	
-	// Setting the user processes in the initialization table
-	for ( i = 1; i < NUM_TEST_PROCS + 1; i++ ) {
-		g_proc_table[i].m_pid = g_test_procs[i-1].m_pid;
-		g_proc_table[i].m_priority = g_test_procs[i-1].m_priority;
-		g_proc_table[i].m_stack_size = g_test_procs[i-1].m_stack_size;
-		g_proc_table[i].mpf_start_pc = g_test_procs[i-1].mpf_start_pc;
-	}
-  
-	// initilize exception stack frame (i.e. initial context) for each process
-	for ( i = 0; i < NUM_TEST_PROCS+1; i++ ) {
-		int j;
-		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
-		(gp_pcbs[i])->m_state = NEW;
-		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
-		
-		sp = alloc_stack((g_proc_table[i]).m_stack_size);
-		*(--sp)  = INITIAL_xPSR; // user process initial xPSR  
-		*(--sp)  = (U32)((g_proc_table[i]).mpf_start_pc); // PC contains the entry point of the process
-		for ( j = 0; j < 6; j++ ) { // R0-R3, R12 are cleared with 0
-			*(--sp) = 0x0;
-		}
-		(gp_pcbs[i])->mp_sp = sp;
-		
-		(gp_pcb_nodes[i])->next = NULL;
-		(gp_pcb_nodes[i])->p_pcb = gp_pcbs[i];
-	}
-	
-	// Setting all queues to be empty
-	for (i = 0; i < 5; i++){
-		ready_priority_queue[i].head = NULL;
-		ready_priority_queue[i].tail = NULL;
-	}
-	
-	// Adding processes to the appropriate ready queue
-	for (i = 0; i < NUM_TEST_PROCS+1; i++) {
-		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), gp_pcb_nodes[i]);
-	}
-
-	// Setting everything in the blocked queue to be null
-	blocked_priority_queue.head = NULL;
-	blocked_priority_queue.tail = NULL;	
 }
 
 /**

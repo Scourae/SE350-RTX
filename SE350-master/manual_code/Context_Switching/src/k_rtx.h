@@ -14,7 +14,7 @@
 #define RTX_OK  0
 
 #define NULL 0
-#define NUM_TEST_PROCS 6
+#define NUM_TEST_PROCS 16
 
 #ifdef DEBUG_0
 #define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
@@ -40,7 +40,6 @@ typedef struct pcb
 	U32 m_pid;		/* process id */
 	PROC_STATE_E m_state;   /* state of the process */
   U32 m_priority;
-	// We need PC
 } PCB;
 
 /* initialization table item */

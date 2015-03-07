@@ -77,16 +77,16 @@ void memory_init(void)
 	gp_pcbs = (PCB **)p_end;
 	p_end += (NUM_TEST_PROCS+1) * sizeof(PCB *);
   
-	for ( i = 0; i < NUM_TEST_PROCS + 1; i++ ) {
+	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		gp_pcbs[i] = (PCB *)p_end;
 		p_end += sizeof(PCB); 
 	}
 	
 	/* allocate memory for pcb node pointers   */
 	gp_pcb_nodes = (PCB_NODE **)p_end;
-	p_end += (NUM_TEST_PROCS+1) * sizeof(PCB_NODE *);
+	p_end += (NUM_TEST_PROCS) * sizeof(PCB_NODE *);
   
-	for ( i = 0; i < NUM_TEST_PROCS + 1; i++ ) {
+	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		gp_pcb_nodes[i] = (PCB_NODE *)p_end;
 		p_end += sizeof(PCB_NODE); 
 	}
