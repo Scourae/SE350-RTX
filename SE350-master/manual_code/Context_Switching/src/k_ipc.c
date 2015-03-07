@@ -105,7 +105,8 @@ PCB_NODE* remove_from_blocked_list(int pid)
 
  int k_send_message(int target_pid, void* message_envelope)
  {
-  	ENVELOPE* msg = (ENVELOPE*) message_envelope;
+  	PCB* gp_current_process = k_get_current_process();
+		ENVELOPE* msg = (ENVELOPE*) message_envelope;
 		PCB* targetPCB = gp_pcb_nodes[msg->destination_pid]->p_pcb;
   	msg->nextMsg = NULL;
   	msg_enqueue(targetPCB, msg);
@@ -113,6 +114,8 @@ PCB_NODE* remove_from_blocked_list(int pid)
   	{
   		remove_from_blocked_list(msg->destination_pid);
 			k_ready_process(msg->destination_pid);
+			if (gp_current_process->m_priority < targetPCB->m_priority)
+				k_release_processor();
 		}
  	return 0;
  }
