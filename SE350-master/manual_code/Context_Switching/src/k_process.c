@@ -27,6 +27,8 @@ PCB *gp_current_process = NULL; // always point to the current RUN process
 
 /* Process Initialization Table */
 PROC_INIT g_proc_table[NUM_PROCS];
+int uart_preemption_flag = 0;
+
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 /* ----- Queue Declarations ----- */
@@ -160,7 +162,7 @@ void process_init()
 	}
 	
 	// Adding the system processes to the appropriate ready queue
-	for (i = 10; i <= 13; i++) {
+	for (i = 12; i <= 13; i++) {
 		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), gp_pcb_nodes[i]);
 	}
 
@@ -297,12 +299,15 @@ int k_set_process_priority(int process_id, int priority){
 PCB *scheduler(void)
 {
 	int i = 0;
-	
+	if (uart_preemption_flag == 1){
+		uart_preemption_flag = 0;
+		return gp_pcbs[UART_IPROC_PID];
+	}
 	// Checks if there are any system processes ready to run
-	/*if(!isEmpty(&ready_priority_queue[SYS_PROC])){
+	if(!isEmpty(&ready_priority_queue[SYS_PROC])){
 		// Returns any system processes first
 		return dequeue(&ready_priority_queue[SYS_PROC])->p_pcb;
-	}*/
+	}
 	
 	// Then checks the user procs (last/default is null process)
 	for (i = 0; i < 5; i++){

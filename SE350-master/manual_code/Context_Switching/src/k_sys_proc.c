@@ -255,5 +255,14 @@ void kcd_proc(void)
 
 void crt_proc(void) 
 {
-	// TODC
+	while(1){
+		ENVELOPE* env = (ENVELOPE*) k_receive_message(NULL);
+		if (env->message_type == MSG_CRT_DISPLAY){
+			send_message(15, env);
+			//pUart->IER |= IER_THRE;
+		} else {
+			release_memory_block(env->message);
+		}
+		
+	}
 }

@@ -8,6 +8,8 @@
 
 extern PCB_NODE* blocked_on_receive_list;
 extern int send_message_preemption_flag;
+extern int uart_preemption_flag;
+
 void add_to_blocked_list(PCB_NODE* target)
 {
 	PCB_NODE* pointer = blocked_on_receive_list;
@@ -92,13 +94,19 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		{
 			remove_from_blocked_list(msg->destination_pid);
 			k_ready_process(msg->destination_pid);
-			if (gp_current_process->m_priority < targetPCB->m_priority && send_message_preemption_flag)
+			if ((gp_current_process->m_priority < targetPCB->m_priority)&& send_message_preemption_flag)
 				k_release_processor();
+		}
+		else if (targetPCB->m_pid == UART_IPROC_PID){
+			uart_preemption_flag = 1;
+			k_release_processor();
 		}
 		__enable_irq();
 		return 0;
  }
 
+ 
+ 
  void* k_receive_message(int* sender_ID)
  {
 	 ENVELOPE* msg;
