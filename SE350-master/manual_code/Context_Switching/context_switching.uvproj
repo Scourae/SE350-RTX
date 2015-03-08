@@ -421,6 +421,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\main_svc.c</FilePath>
             </File>
+            <File>
+              <FileName>timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\timer.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -445,6 +450,26 @@
               <FileName>k_process.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\k_process.c</FilePath>
+            </File>
+            <File>
+              <FileName>k_usr_proc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\k_usr_proc.c</FilePath>
+            </File>
+            <File>
+              <FileName>k_sys_proc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\k_sys_proc.c</FilePath>
+            </File>
+            <File>
+              <FileName>k_ipc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\k_ipc.c</FilePath>
+            </File>
+            <File>
+              <FileName>uart_irq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\uart_irq.c</FilePath>
             </File>
           </Files>
         </Group>

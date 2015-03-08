@@ -39,6 +39,14 @@
 #define USR_SZ_STACK 0x100         /* user proc stack size 218B  */
 #endif /* DEBUG_0 */
 
+/* Process Priority. The bigger the number is, the lower the priority is*/
+#define HIGH    0
+#define MEDIUM  1
+#define LOW     2
+#define LOWEST  3
+#define NULL_PROC 4 /* the hidden priority for the null process only */
+#define SYS_PROC 5 /* special priority for system processes KCD, CRT, and Wall Clock (and set priority process)*/
+
 /*----- Types -----*/
 typedef unsigned char U8;
 typedef unsigned int U32;
