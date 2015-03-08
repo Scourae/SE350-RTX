@@ -67,44 +67,18 @@ PCB_NODE* remove_from_blocked_list(int pid)
  	}
  }
 
- ENVELOPE* msg_dequeue(ENV_QUEUE* q, int* sender_ID) {
- 	ENVELOPE* target = q->head;
-	ENVELOPE* previous = q->head;
-	if (msg_empty(q) == 1) return NULL;
- 	if ((sender_ID == NULL)||(target->sender_pid == *sender_ID))
- 	{
- 		if (q->head == q->tail)
- 		{
- 			q->head = NULL;
- 			q->tail = NULL;
- 		}
- 		else
- 			q->head = q->head->nextMsg;
- 		target->nextMsg = NULL;
- 		return target;
- 	}
- 	else
- 	{
- 		target = target->nextMsg;
- 		while (target != NULL)
- 		{
- 			if (target->sender_pid == *sender_ID)
- 				break;
- 			target = target->nextMsg;
- 			previous = previous->nextMsg;
- 		}
- 		if (target == NULL) return NULL;
- 		if (target == q->tail)
- 		{
- 			previous->nextMsg = NULL;
- 			q->tail = previous;
- 		}
- 		else
- 			previous->nextMsg = previous->nextMsg->nextMsg;
- 		target->nextMsg = NULL;
- 		return target;
- 	}
- }
+ ENVELOPE* dequeue_env_queue(ENV_QUEUE *q){
+	ENVELOPE *curHead = q->head;
+	if (q->head == q->tail)
+	{
+		q->head = NULL;
+		q->tail = NULL;
+	}
+	else
+		q->head = q->head->nextMsg;
+	curHead->nextMsg = NULL;
+	return curHead;
+}
 
  int k_send_message(int target_pid, void* message_envelope)
  {
@@ -140,7 +114,8 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		}
 		k_release_processor();
 	}
-	msg = msg_dequeue(&(gp_current_process->env_q), sender_ID);
+	msg = dequeue_env_queue(&(gp_current_process->env_q));
+	sender_ID = &msg->sender_pid;
 	return (void*) msg;
  }
 
@@ -159,6 +134,16 @@ PCB_NODE* remove_from_blocked_list(int pid)
 	 }
  }
  
+ void* k_non_block_receive_message(int* sender_ID)
+ {
+		ENVELOPE* msg;
+		PCB* gp_current_process = k_get_current_process();
+		PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
+		msg = dequeue_env_queue(&(gp_current_process->env_q));
+		sender_ID = &msg->sender_pid;
+		return (void*) msg;
+ }
+
 void k_print_blocked_on_receive_queue_helper(int priority){
 	PCB_NODE* cur = blocked_on_receive_list;
 	
@@ -180,5 +165,4 @@ void k_print_blocked_on_receive_queue()
 	for(i = 0; i < 4; i++){
 		k_print_blocked_on_receive_queue_helper(i);
 	}
-}
- 
+} 

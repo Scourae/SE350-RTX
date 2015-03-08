@@ -19,6 +19,16 @@ typedef struct envelope {
 	void* message;
 } ENVELOPE;
 
+typedef struct env_queue{
+	ENVELOPE* head;
+	ENVELOPE* tail;
+} ENV_QUEUE;
+
+ENVELOPE* dequeue_env_queue(ENV_QUEUE *q);
+
 void set_message(void* envelope, void* message, int msg_bytes_size);
+int k_send_message(int target_pid, void* message_envelope);
+void* k_receive_message(int* sender_ID);
+void* k_non_block_receive_message(int* sender_ID);
 void k_print_blocked_on_receive_queue(void);
 #endif

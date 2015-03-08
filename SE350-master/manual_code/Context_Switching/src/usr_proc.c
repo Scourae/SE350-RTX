@@ -146,7 +146,7 @@ void receive_message_test(void)
 	int i = 0;
 	int sender_pid = 1;
 	int receiver_pid = 2;
-	ENVELOPE* message = receive_message(&sender_pid);
+	ENVELOPE* message = receive_message(NULL);
 	char* char_message = (char*) message->message;
 	// Change this depending on the pid of this test
 	if (*char_message == 'x') 

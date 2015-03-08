@@ -172,6 +172,13 @@ void process_init()
 		blocked_on_memory_queue[i].head = NULL;
 		blocked_on_memory_queue[i].tail = NULL;
 	}
+	
+	// Keyboard commands initialization
+	for (i = 0; i < KC_MAX_COMMANDS; i++)
+	{
+		g_kc_reg[i].command[0] = '\0';
+		g_kc_reg[i].pid = -1;
+	}
 }
 
 /**
