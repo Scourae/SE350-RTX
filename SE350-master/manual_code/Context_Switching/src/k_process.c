@@ -30,8 +30,8 @@ PROC_INIT g_proc_table[NUM_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 /* ----- Queue Declarations ----- */
-QUEUE ready_priority_queue[5];
-QUEUE blocked_on_memory_queue[5];
+QUEUE ready_priority_queue[6];
+QUEUE blocked_on_memory_queue[6];
 PCB_NODE* blocked_on_receive_list = NULL;
 
 /**
@@ -59,61 +59,61 @@ void process_init()
 	
 	// Setting the Null Process in the initialization table
 	g_proc_table[0].m_pid = 0;
-	g_proc_table[0].m_priority = 4;
+	g_proc_table[0].m_priority = NULL_PROC;
 	g_proc_table[0].mpf_start_pc = &null_proc;
 	g_proc_table[0].m_stack_size = 0x100;
 	
 	// Setting the stress_test_a Process in the initialization table
 	g_proc_table[7].m_pid = 7;
-	g_proc_table[7].m_priority = 4;
+	g_proc_table[7].m_priority = LOWEST;
 	g_proc_table[7].mpf_start_pc = &stress_test_a;
 	g_proc_table[7].m_stack_size = 0x100;
 	
 	// Setting the stress_test_b Process in the initialization table
 	g_proc_table[8].m_pid = 8;
-	g_proc_table[8].m_priority = 4;
+	g_proc_table[8].m_priority = LOWEST;
 	g_proc_table[8].mpf_start_pc = &stress_test_b;
 	g_proc_table[8].m_stack_size = 0x100;
 	
 	// Setting the stress_test_c Process in the initialization table
 	g_proc_table[9].m_pid = 9;
-	g_proc_table[9].m_priority = 4;
+	g_proc_table[9].m_priority = LOWEST;
 	g_proc_table[9].mpf_start_pc = &stress_test_c;
 	g_proc_table[9].m_stack_size = 0x100;
 	
 	// Setting the set_priority_proc Process in the initialization table
 	g_proc_table[10].m_pid = 10;
-	g_proc_table[10].m_priority = 4;
+	g_proc_table[10].m_priority = SYS_PROC;
 	g_proc_table[10].mpf_start_pc = &set_priority_proc;
 	g_proc_table[10].m_stack_size = 0x100;
 	
 	// Setting the wall_clock_display Process in the initialization table
 	g_proc_table[11].m_pid = 11;
-	g_proc_table[11].m_priority = 4;
+	g_proc_table[11].m_priority = SYS_PROC;
 	g_proc_table[11].mpf_start_pc = &wall_clock_display;
 	g_proc_table[11].m_stack_size = 0x100;
 	
 	// Setting the kcd_proc Process in the initialization table
 	g_proc_table[12].m_pid = 12;
-	g_proc_table[12].m_priority = 4;
+	g_proc_table[12].m_priority = SYS_PROC;
 	g_proc_table[12].mpf_start_pc = &kcd_proc;
 	g_proc_table[12].m_stack_size = 0x100;
 	
 	// Setting the crt_proc Process in the initialization table
 	g_proc_table[13].m_pid = 13;
-	g_proc_table[13].m_priority = 4;
+	g_proc_table[13].m_priority = SYS_PROC;
 	g_proc_table[13].mpf_start_pc = &crt_proc;
 	g_proc_table[13].m_stack_size = 0x100;
 	
 	// Setting the timer_i_proc Process in the initialization table
 	g_proc_table[14].m_pid = 14;
-	g_proc_table[14].m_priority = 4;
+	g_proc_table[14].m_priority = SYS_PROC;
 	g_proc_table[14].mpf_start_pc = &timer_i_proc;
 	g_proc_table[14].m_stack_size = 0x100;
 	
 	// Setting the uart_i_proc Process in the initialization table
 	g_proc_table[15].m_pid = 15;
-	g_proc_table[15].m_priority = 4;
+	g_proc_table[15].m_priority = SYS_PROC;
 	g_proc_table[15].mpf_start_pc = &uart_i_proc;
 	g_proc_table[15].m_stack_size = 0x100;
 	
@@ -149,7 +149,7 @@ void process_init()
 	}
 	
 	// Setting all ready queues to be empty
-	for (i = 0; i < 5; i++){
+	for (i = 0; i < 6; i++){
 		ready_priority_queue[i].head = NULL;
 		ready_priority_queue[i].tail = NULL;
 	}
@@ -158,12 +158,17 @@ void process_init()
 	for (i = 0; i < NUM_TEST_PROCS+1; i++) {
 		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), gp_pcb_nodes[i]);
 	}
+	
+	// Adding the system processes to the appropriate ready queue
+	for (i = 10; i <= 13; i++) {
+		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), gp_pcb_nodes[i]);
+	}
 
 	// Setting everything in the blocked queue to be null
 	blocked_on_receive_list = NULL;
 	
 	// Setting blocked on memory queues to be empty
-	for (i = 0; i < 5; i++){
+	for (i = 0; i < 6; i++){
 		blocked_on_memory_queue[i].head = NULL;
 		blocked_on_memory_queue[i].tail = NULL;
 	}
@@ -292,7 +297,14 @@ int k_set_process_priority(int process_id, int priority){
 PCB *scheduler(void)
 {
 	int i = 0;
-
+	
+	// Checks if there are any system processes ready to run
+	/*if(!isEmpty(&ready_priority_queue[SYS_PROC])){
+		// Returns any system processes first
+		return dequeue(&ready_priority_queue[SYS_PROC])->p_pcb;
+	}*/
+	
+	// Then checks the user procs (last/default is null process)
 	for (i = 0; i < 5; i++){
 		if(!isEmpty(&ready_priority_queue[i])){
 			// Returns the PCB of the highest priority
