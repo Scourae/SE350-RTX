@@ -9,6 +9,8 @@
 
 extern volatile U32 g_timer_count;
 
+KC_LIST g_kc_reg[KC_MAX_COMMANDS];
+
 /* indefinitely releases the processor */
 void null_proc(void);
 

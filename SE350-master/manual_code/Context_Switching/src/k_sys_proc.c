@@ -15,6 +15,8 @@ int send_message_preemption_flag = 1; // 0 for not preempting and 1 otherwise
 char g_input_buffer[INPUT_BUFFER_SIZE]; // buffer char array to hold the input
 int g_input_buffer_index = 0; // current index of the buffer such that all indices before this one holds a char
 U8 g_char_in;
+U32 g_char_out_index = 0;
+ENVELOPE* g_curr_p = NULL;
 
 int k_delayed_send(int process_id, void * env, int delay){
 	ENVELOPE *lope = (ENVELOPE *) env;
@@ -126,20 +128,6 @@ void sorted_insert(ENVELOPE* lope){
 	}
 }
 
-ENVELOPE* dequeue_env_queue(ENV_QUEUE *q){
-	ENVELOPE *curHead = q->head;
-	if (q->head == q->tail)
-	{
-		q->head = NULL;
-		q->tail = NULL;
-	}
-	else
-		q->head = q->head->nextMsg;
-	curHead->nextMsg = NULL;
-	return curHead;
-}
-
-
 void timer_i_proc(void) {
 	ENVELOPE* lope = NULL;
 	int preemption_flag = 0;
@@ -235,14 +223,58 @@ void uart_i_proc(void) {
 	} 
 	else if (IIR_IntId & IIR_THRE) 
 	{
-			// TODO
+			char* g_input;
+			if (g_curr_p == NULL)
+				g_curr_p = (ENVELOPE*) k_non_block_receive_message(NULL);
+			if (g_curr_p != NULL)
+			{
+				g_input = (char*) g_curr_p->message;
+				if (g_input[g_char_out_index] != '\0')
+				{
+					// print normal char
+					pUart->THR = g_input[g_char_out_index];
+					g_char_out_index++;
+				}
+				else
+				{
+					// done printing
+					pUart->THR = g_input[g_char_out_index];
+					k_release_memory_block(g_curr_p);
+					g_curr_p = NULL;
+					g_char_out_index = 0;
+				}
+			}
 	}    
 	__enable_irq();
 }
 
 void kcd_proc(void) 
 {
-	// TODO
+	ENVELOPE* msg;
+	int* sender;
+	int i;
+	while(1)
+	{
+		msg = (ENVELOPE*) k_receive_message(sender);
+		if (msg != NULL)
+		{
+			if (msg->message_type == MSG_COMMAND_REGISTRATION)
+			{
+				for (i = 0; i < KC_MAX_COMMANDS; i++)
+				{
+					if (g_kc_reg[i].pid == -1)
+					{
+						g_kc_reg[i].pid = *sender;
+						
+					}
+				}
+			}
+			else if (msg->message_type == MSG_CONSOLE_INPUT)
+			{
+				
+			}
+		}
+	}
 }
 
 void crt_proc(void) 
