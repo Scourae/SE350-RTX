@@ -2,13 +2,6 @@
 #include "k_memory.h"
 #include "k_process.h"
 
-#define MAX_ENVELOPE 32
-#define SENDER_ID_OFFSET 										sizeof(ENVELOPE*)
-#define DESTINATION_ID_OFFSET 							SENDER_ID_OFFSET + sizeof(U32)
-#define MESSAGE_TYPE_OFFSET 								DESTINATION_ID_OFFSET + sizeof(U32)
-#define DELAY_OFFSET 												MESSAGE_TYPE_OFFSET + sizeof(U32)
-#define HEADER_OFFSET 											DELAY_OFFSET + sizeof(U32)
-
 PCB_NODE* blocked_on_receive_list = NULL;
 extern int send_message_preemption_flag;
 void add_to_blocked_list(PCB_NODE* target)

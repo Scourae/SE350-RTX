@@ -17,8 +17,6 @@
 U32 *gp_stack; 	/* The last allocated stack low address. 8 bytes aligned */
 								/* The first stack starts at the RAM high address */
 								/* stack grows down. Fully decremental stack */
-#define MEMORY_BLOCK_SIZE 128
-#define NUM_OF_MEMBLOCKS 32
 U8* beginHeap;
 U8* beginMemMap;
 U8 *p_end;

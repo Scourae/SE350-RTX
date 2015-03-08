@@ -11,6 +11,8 @@
 #include "k_rtx.h"
 
 /* ----- Definitions ----- */
+#define MEMORY_BLOCK_SIZE 128
+#define NUM_OF_MEMBLOCKS 32
 #define RAM_END_ADDR 0x10008000
 
 /* ----- Variables ----- */
@@ -21,6 +23,7 @@ extern PCB_NODE **gp_pcb_nodes;
 extern PROC_INIT g_proc_table[NUM_TEST_PROCS];
 
 /* ----- Functions ------ */
+int mem_empty();
 void memory_init(void);
 U32 *alloc_stack(U32 size_b);
 void *k_request_memory_block(void);

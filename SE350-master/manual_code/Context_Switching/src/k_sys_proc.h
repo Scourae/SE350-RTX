@@ -2,6 +2,10 @@
 #define K_SYSTEM_PROC_H
 
 #include "k_rtx.h"
+#include "k_memory.h"
+#include "k_ipc.h"
+
+#define INPUT_BUFFER_SIZE (MEMORY_BLOCK_SIZE-HEADER_OFFSET)
 
 extern volatile U32 g_timer_count;
 
