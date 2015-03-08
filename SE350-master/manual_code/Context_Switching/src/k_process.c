@@ -32,7 +32,7 @@ extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 /* ----- Queue Declarations ----- */
 QUEUE ready_priority_queue[5];
 QUEUE blocked_on_memory_queue[5];
-QUEUE blocked_on_receive_queue;
+PCB_NODE* blocked_on_receive_list = NULL;
 
 /**
  * Gets the process priority
@@ -160,8 +160,7 @@ void process_init()
 	}
 
 	// Setting everything in the blocked queue to be null
-	blocked_on_receive_queue.head = NULL;
-	blocked_on_receive_queue.tail = NULL;
+	blocked_on_receive_list = NULL;
 	
 	// Setting blocked on memory queues to be empty
 	for (i = 0; i < 5; i++){
@@ -428,12 +427,41 @@ PCB* k_get_current_process()
 	return gp_current_process;
 }
 
+// HotKey #1: printing to the RTX system debug terminal all the procs currently on the ready queue
 void k_print_ready_queue()
 {
-	// TODO
+	int i = 0;
+	printf("\n\r\n\r----- PROCESSES CURRENTLY IN READY QUEUE -----\n\r\n\r");
+	printf("Current running process with PID %d\n\r", gp_current_process->m_pid);
+	
+	for (i = 0; i < 4; i++){
+		if(!isEmpty(&ready_priority_queue[i])){
+			PCB_NODE* cur = ready_priority_queue[i].head;
+			printf("\n\rPriority %d:\n\r", i);
+			
+			while(cur != NULL){
+				printf("\t Process with PID %d\n\r", cur->p_pcb->m_pid);
+				cur = cur->next;
+			}
+		}
+	}
 }
 
+// HotKey #2: printing to the RTX system debug terminal all the procs currently on the blocked on memory queue
 void k_print_blocked_on_memory_queue()
 {
-	// TODO
+	int i = 0;
+	printf("\n\r\n\r----- PROCESSES CURRENTLY IN BLOCKED ON MEMORY QUEUE -----\n\r");
+	
+	for (i = 0; i < 4; i++){
+		if(!isEmpty(&blocked_on_memory_queue[i])){
+			PCB_NODE* cur = blocked_on_memory_queue[i].head;
+			printf("\n\rPriority %d:\n\r", i);
+			
+			while(cur != NULL){
+				printf("\t Process with PID %d\n\r", cur->p_pcb->m_pid);
+				cur = cur->next;
+			}
+		}
+	}
 }
