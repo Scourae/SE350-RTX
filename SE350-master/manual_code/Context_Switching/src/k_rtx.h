@@ -21,6 +21,7 @@
 #define NUM_PROCS 16
 
 #define KCD_PID 12
+#define CRT_PID 13
 #define TIMER_PID 14
 #define UART_IPROC_PID 15
 

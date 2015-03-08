@@ -177,6 +177,37 @@ void uart_i_proc(void) {
 		/* read UART. Read RBR will clear the interrupt */
 		g_char_in = pUart->RBR;
 		
+		// Avoid interuption by only sending when mem blocks are avaliable
+		// Sends input to crt display
+		if (mem_empty() == 0)
+		{
+			int display_size;
+			char display_msg[3];
+			if (g_char_in == '\r')
+			{
+				display_size = 3;
+				display_msg[0] = '\n';
+				display_msg[1] = g_char_in;
+				display_msg[2] = '\0';
+			}
+			else
+			{
+				display_size = 2;
+				display_msg[0] = g_char_in;
+				display_msg[1] = '\0';
+			}
+			
+			msg = (ENVELOPE*) k_request_memory_block();
+			msg->sender_pid = UART_IPROC_PID;
+			msg->destination_pid = CRT_PID;
+			msg->nextMsg = NULL;
+			msg->message_type = MSG_CRT_DISPLAY;
+			msg->delay = 0;
+			set_message(msg, display_msg, display_size*sizeof(char));	
+			k_send_message(CRT_PID, msg);
+			g_input_buffer_index = 0;
+		}
+		
 #ifdef DEBUG_HOTKEYS		
 		if (g_char_in == DEBUG_HOTKEY_1)
 			k_print_ready_queue();
@@ -265,13 +296,46 @@ void kcd_proc(void)
 					if (g_kc_reg[i].pid == -1)
 					{
 						g_kc_reg[i].pid = *sender;
-						
+						strcpy(msg->message, g_kc_reg[i].command);
+						break;
 					}
 				}
 			}
 			else if (msg->message_type == MSG_CONSOLE_INPUT)
 			{
+				int i = 0;
+				int j;
+				char command[KC_MAX_CHAR];
+				char* message_curr = msg->message;
+				while ((i < KC_MAX_CHAR)&&(message_curr[i] != ' ')&&(message_curr[i] != '\0'))
+				{
+					command[i] = message_curr[i];
+					i++;
+				}
+				command[i] = '\0';
 				
+				// find end of message 
+				while (message_curr[i] != '\0')
+				{
+					i++;
+				}
+				
+				for (j = 0; j < KC_MAX_COMMANDS; j++)
+				{
+					if (strcmp(command,g_kc_reg[j].command) == 0)
+					{
+						ENVELOPE* kcd_msg = (ENVELOPE*) k_request_memory_block();
+						kcd_msg->sender_pid = KCD_PID;
+						kcd_msg->destination_pid = g_kc_reg[j].pid;
+						kcd_msg->nextMsg = NULL;
+						kcd_msg->message_type = MSG_KCD_DISPATCH;
+						kcd_msg->delay = 0;
+						set_message(kcd_msg, message_curr, i*sizeof(char));	
+						k_send_message(KCD_PID, kcd_msg);
+						break;
+					}
+				}
+				k_release_memory_block(msg);
 			}
 		}
 	}
