@@ -8,6 +8,8 @@
 #ifndef K_RTX_H_
 #define K_RTX_H_
 
+#include "k_ipc.h"
+
 /*----- Definitations -----*/
 
 #define RTX_ERR -1
@@ -32,15 +34,6 @@ typedef unsigned int U32;
 
 /* process states, note we only assume three states in this example */
 typedef enum {NEW = 0, RDY, RUN, BLOCKED_ON_MEMORY, BLOCKED_ON_RECEIVE, INTRPT} PROC_STATE_E;  
-
-typedef struct envelope {
-	struct envelope* nextMsg;
-	U8 sender_pid;
-	U8 destination_pid;
-	U8 message_type;
-	U8 delay;
-	void* message;
-} ENVELOPE;
 
 typedef struct env_queue{
 	ENVELOPE* head;

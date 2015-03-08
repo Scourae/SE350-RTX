@@ -1,8 +1,14 @@
-#include "k_rtx.h"
+#include "k_ipc.h"
 #include "k_memory.h"
 #include "k_process.h"
 
 #define MAX_ENVELOPE 32
+#define SENDER_ID_OFFSET 										sizeof(ENVELOPE*)
+#define DESTINATION_ID_OFFSET 							SENDER_ID_OFFSET + sizeof(U32)
+#define MESSAGE_TYPE_OFFSET 								DESTINATION_ID_OFFSET + sizeof(U32)
+#define DELAY_OFFSET 												MESSAGE_TYPE_OFFSET + sizeof(U32)
+#define HEADER_OFFSET 											DELAY_OFFSET + sizeof(U32)
+
 PCB_NODE* blocked_on_receive_list = NULL;
 
 void add_to_blocked_list(PCB_NODE* target)
@@ -105,26 +111,29 @@ PCB_NODE* remove_from_blocked_list(int pid)
 
  int k_send_message(int target_pid, void* message_envelope)
  {
-  	PCB* gp_current_process = k_get_current_process();
+		PCB* gp_current_process = k_get_current_process();
 		ENVELOPE* msg = (ENVELOPE*) message_envelope;
 		PCB* targetPCB = gp_pcb_nodes[msg->destination_pid]->p_pcb;
-  	msg->nextMsg = NULL;
-  	msg_enqueue(&(targetPCB->env_q), msg);
-  	if (targetPCB->m_state == BLOCKED_ON_RECEIVE)
-  	{
-  		remove_from_blocked_list(msg->destination_pid);
+	 __disable_irq();
+		msg->nextMsg = NULL;
+		msg_enqueue(&(targetPCB->env_q), msg);
+		if (targetPCB->m_state == BLOCKED_ON_RECEIVE)
+		{
+			remove_from_blocked_list(msg->destination_pid);
 			k_ready_process(msg->destination_pid);
 			if (gp_current_process->m_priority < targetPCB->m_priority)
 				k_release_processor();
 		}
- 	return 0;
+		__enable_irq();
+		return 0;
  }
 
  void* k_receive_message(int* sender_ID)
  {
-	ENVELOPE* msg;
+	 ENVELOPE* msg;
 	PCB* gp_current_process = k_get_current_process();
 	PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
+	 __disable_irq();
 	while(msg_empty(&(gp_current_process->env_q)))
 	{
 		if (gp_current_process->m_state != BLOCKED_ON_RECEIVE)
@@ -136,5 +145,21 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		k_release_processor();
 	}
 	msg = msg_dequeue(&(gp_current_process->env_q), sender_ID);
+	__enable_irq();
 	return (void*) msg;
  }
+
+ void set_message(void* envelope, void* message, int msg_size_bytes)
+ {
+	 char* target = (char*) envelope + HEADER_OFFSET;
+	 char* source = message;
+	 int i;
+	 for (i = 0; i < msg_size_bytes; i++)
+	 {
+		 *target = *source;
+		 source += i;
+		 target += i;
+	 }
+ }
+ 
+ 

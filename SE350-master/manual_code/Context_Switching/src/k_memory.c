@@ -151,7 +151,7 @@ int mem_empty() {
 void *k_request_memory_block(void) {
 	U8* rVoid = beginHeap;
 	int i;
-	
+	__disable_irq();
 	while(mem_empty() == 1)
 	{
 		k_block_current_processs();
@@ -170,7 +170,7 @@ void *k_request_memory_block(void) {
 	/*#ifdef DEBUG_0 
 		printf("k_request_memory_block: @ 0x%x\n\r", rVoid+i*MEMORY_BLOCK_SIZE);
 	#endif */
-	
+	__enable_irq();
 	return (void*) (rVoid+i*MEMORY_BLOCK_SIZE);
 }
 
