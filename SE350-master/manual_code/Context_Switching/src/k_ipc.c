@@ -155,4 +155,8 @@ PCB_NODE* remove_from_blocked_list(int pid)
 	 }
  }
  
+ void k_print_blocked_on_receive_queue()
+ {
+		// TODO
+ }
  

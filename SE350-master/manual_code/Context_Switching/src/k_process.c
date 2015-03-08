@@ -420,3 +420,13 @@ PCB* k_get_current_process()
 {
 	return gp_current_process;
 }
+
+void k_print_ready_queue()
+{
+	// TODO
+}
+
+void k_print_blocked_on_memory_queue()
+{
+	// TODO
+}

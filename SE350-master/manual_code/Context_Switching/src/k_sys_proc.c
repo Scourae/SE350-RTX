@@ -5,12 +5,12 @@
 #include "k_ipc.h"
 #include "k_memory.h"
 #include "k_process.h"
+#include "uart_def.h"
 
 ENV_QUEUE t_queue;
 extern volatile uint32_t g_timer_count;
 extern PCB* gp_current_process;
 int send_message_preemption_flag = 1; // 0 for not preempting and 1 otherwise
-int uart_preemption_flag = 1; // 0 for not preempting and 1 otherwise
 
 char g_input_buffer[INPUT_BUFFER_SIZE]; // buffer char array to hold the input
 int g_input_buffer_index = 0; // current index of the buffer such that all indices before this one holds a char
@@ -189,15 +189,19 @@ void uart_i_proc(void) {
 		/* read UART. Read RBR will clear the interrupt */
 		g_char_in = pUart->RBR;
 		
-		???uart_preemption_flag = 0;
 #ifdef DEBUG_HOTKEYS		
-		if (g_char_in == DEBUG_ //TODO
+		if (g_char_in == DEBUG_HOTKEY_1)
+			k_print_ready_queue();
+		else if (g_char_in == DEBUG_HOTKEY_2)
+			k_print_blocked_on_memory_queue();
+		else if (g_char_in == DEBUG_HOTKEY_3)
+			k_print_blocked_on_receive_queue();
 #endif			
 	
 		if (g_char_in != '\r') // Any char not an enter
 		{
 #ifdef DEBUG_HOTKEYS
-			if (g_char_in != DEBUG_ //TODO
+			if ((g_char_in != DEBUG_HOTKEY_1)&&(g_char_in != DEBUG_HOTKEY_2)&&(g_char_in != DEBUG_HOTKEY_3))
 			{
 				g_input_buffer[g_input_buffer_index] = g_char_in;
 				g_input_buffer_index++;
@@ -209,49 +213,39 @@ void uart_i_proc(void) {
 		else // Enter is pressed
 		{
 			g_input_buffer[g_input_buffer_index] = '\0';
+			g_input_buffer_index++;
 			
 			// Avoid interuption by only sending when mem blocks are avaliable
 			if (mem_empty() == 0)
 			{
-				msg = (ENVELOPE*) request_memory_block();
-				msg->sender_pid = uart_iproc_pid;
-				msg->destination_pid = receiver_pid;
+				msg = (ENVELOPE*) k_request_memory_block();
+				msg->sender_pid = UART_IPROC_PID;
+				msg->destination_pid = KCD_PID;
 				msg->nextMsg = NULL;
-				msg->message_type = 0;
+				msg->message_type = MSG_CONSOLE_INPUT;
 				msg->delay = 0;
-				set_message(message, &msg, sizeof(char));	
+				set_message(msg, g_input_buffer, g_input_buffer_index*sizeof(char));	
+				k_send_message(KCD_PID, msg);
+				g_input_buffer_index = 0;
 			}
 		}
 		
 		g_input_buffer[g_input_buffer_index] = g_char_in;
 
-	} else if (IIR_IntId & IIR_THRE) {
-	/* THRE Interrupt, transmit holding register becomes empty */
-
-		if (*gp_buffer != '\0' ) {
-			g_char_out = *gp_buffer;
-#ifdef DEBUG_0
-			
-			// you could use the printf instead
-			printf("Writing a char = %c \n\r", g_char_out);
-#endif // DEBUG_0			
-			pUart->THR = g_char_out;
-			gp_buffer++;
-		} else {
-#ifdef DEBUG_0
-			uart1_put_string("Finish writing. Turning off IER_THRE\n\r");
-#endif // DEBUG_0
-			pUart->IER ^= IER_THRE; // toggle the IER_THRE bit 
-			pUart->THR = '\0';
-			g_send_char = 0;
-			gp_buffer = g_buffer;		
-		}    
 	} 
+	else if (IIR_IntId & IIR_THRE) 
+	{
+			// TODO
+	}    
 	__enable_irq();
-	uart_preemption_flag = 1;
 }
 
-void kcd_proc(void) {}
+void kcd_proc(void) 
+{
+	// TODO
+}
 
-void crt_proc(void) {}
-
+void crt_proc(void) 
+{
+	// TODC
+}

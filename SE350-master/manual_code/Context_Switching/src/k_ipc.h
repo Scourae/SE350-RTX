@@ -20,4 +20,5 @@ typedef struct envelope {
 } ENVELOPE;
 
 void set_message(void* envelope, void* message, int msg_bytes_size);
+void k_print_blocked_on_receive_queue(void);
 #endif
