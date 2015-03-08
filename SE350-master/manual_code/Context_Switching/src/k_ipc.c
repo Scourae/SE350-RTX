@@ -133,7 +133,6 @@ PCB_NODE* remove_from_blocked_list(int pid)
 	 ENVELOPE* msg;
 	PCB* gp_current_process = k_get_current_process();
 	PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
-	 __disable_irq();
 	while(msg_empty(&(gp_current_process->env_q)))
 	{
 		if (gp_current_process->m_state != BLOCKED_ON_RECEIVE)
@@ -145,20 +144,21 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		k_release_processor();
 	}
 	msg = msg_dequeue(&(gp_current_process->env_q), sender_ID);
-	__enable_irq();
 	return (void*) msg;
  }
 
  void set_message(void* envelope, void* message, int msg_size_bytes)
  {
-	 char* target = (char*) envelope + HEADER_OFFSET;
-	 char* source = message;
+	 ENVELOPE* msg = (ENVELOPE*) envelope;
+	 U32* target = (U32*) envelope + HEADER_OFFSET;
+	 U32* source = (U32*)message;
 	 int i;
+	 msg->message = target;
 	 for (i = 0; i < msg_size_bytes; i++)
 	 {
 		 *target = *source;
-		 source += i;
-		 target += i;
+		 source += 1;
+		 target += 1;
 	 }
  }
  

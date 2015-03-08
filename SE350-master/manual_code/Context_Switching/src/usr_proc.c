@@ -97,7 +97,7 @@ void send_message_test(void)
 	else
 		uart0_put_string("G009_test: test 1 FAIL\n\r");
 	
-	set_process_priority(sender_pid, 3);
+	set_process_priority(receiver_pid, 0);
 	release_memory_block(message);
 	set_process_priority(sender_pid, 3);
 	while (1)
@@ -114,8 +114,7 @@ void receive_message_test(void)
 	ENVELOPE* message = receive_message(&sender_pid);
 	char* char_message = (char*) message->message;
 	// Change this depending on the pid of this test
-	if (message == NULL) uart0_put_string("G009_test: test 2 FAIL\n\r");
-	else if (*char_message == 'x') 
+	if (*char_message == 'x') 
 	{
 		uart0_put_string("G009_test: test 2 OK\n\r");
 		passed++;
@@ -175,8 +174,7 @@ void receive_message_to_blocked(void)
 	ENVELOPE* message = receive_message(&sender_pid);
 	char* char_message = (char*) message->message;
 	// Change this depending on the pid of this test
-	if (message == NULL) uart0_put_string("G009_test: test 4 FAIL\n\r");
-	else if (*char_message == 'x') 
+	if (*char_message == 'x') 
 	{
 		uart0_put_string("G009_test: test 4 OK\n\r");
 		passed++;

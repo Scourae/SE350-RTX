@@ -132,6 +132,10 @@ void process_init()
 		(gp_pcbs[i])->m_state = NEW;
 		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
 		
+		// Message queue init
+		(gp_pcbs[i])->env_q.head = NULL;
+		(gp_pcbs[i])->env_q.tail = NULL;
+		
 		sp = alloc_stack((g_proc_table[i]).m_stack_size);
 		*(--sp)  = INITIAL_xPSR; // user process initial xPSR  
 		*(--sp)  = (U32)((g_proc_table[i]).mpf_start_pc); // PC contains the entry point of the process
@@ -315,7 +319,7 @@ int process_switch(PCB *p_pcb_old)
 	
 	if (gp_current_process != p_pcb_old) {
 		if (state == RDY){ 		
-			p_pcb_old->m_state = RDY; 
+			//p_pcb_old->m_state = RDY; 
 			p_pcb_old->mp_sp = (U32 *) __get_MSP(); // save the old process's sp
 			gp_current_process->m_state = RUN;
 			__set_MSP((U32) gp_current_process->mp_sp); //switch to the new proc's stack    
@@ -407,7 +411,7 @@ void k_ready_first_blocked(void)
 void k_ready_process(int pid)
 {
 	PCB_NODE* currPro = gp_pcb_nodes[pid];
-	gp_current_process->m_state = RDY;
+	gp_pcb_nodes[pid]->p_pcb->m_state = RDY;
 	currPro->next = NULL;
 	enqueue(&ready_priority_queue[currPro->p_pcb->m_priority], currPro);
 }
