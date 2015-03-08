@@ -2,7 +2,11 @@
 #include "k_memory.h"
 #include "k_process.h"
 
-PCB_NODE* blocked_on_receive_list = NULL;
+#ifdef DEBUG_0
+	#include "printf.h"
+#endif /* DEBUG_0 */
+
+extern PCB_NODE* blocked_on_receive_list;
 extern int send_message_preemption_flag;
 void add_to_blocked_list(PCB_NODE* target)
 {
@@ -155,8 +159,26 @@ PCB_NODE* remove_from_blocked_list(int pid)
 	 }
  }
  
- void k_print_blocked_on_receive_queue()
- {
-		// TODO
- }
+void k_print_blocked_on_receive_queue_helper(int priority){
+	PCB_NODE* cur = blocked_on_receive_list;
+	
+	while(cur != NULL){
+		printf("\n\rPriority %d:\n\r", priority);
+		if(cur->p_pcb->m_priority == priority){
+				printf("\t Process with PID %d\n\r", cur->p_pcb->m_pid);				
+		}
+		cur = cur->next;
+	} 
+}
+
+// HotKey #3: printing to the RTX system debug terminal all the procs currently on the blocked on receive queue
+void k_print_blocked_on_receive_queue()
+{
+	int i = 0;
+	printf("\n\r\n\r----- PROCESSES CURRENTLY IN BLOCKED ON RECEIVE QUEUE -----\n\r");
+
+	for(i = 0; i < 4; i++){
+		k_print_blocked_on_receive_queue_helper(i);
+	}
+}
  

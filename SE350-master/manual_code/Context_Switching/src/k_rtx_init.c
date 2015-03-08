@@ -10,6 +10,7 @@
 #include "k_memory.h"
 #include "k_process.h"
 #include "timer.h"
+#include "uart_def.h"
 
 void k_rtx_init(void)
 {
