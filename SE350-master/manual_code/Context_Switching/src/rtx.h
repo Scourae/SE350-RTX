@@ -57,6 +57,10 @@ extern int k_set_process_priority(int pid, int prio);
 #define set_process_priority(pid, prio) _set_process_priority((U32)k_set_process_priority, pid, prio)
 extern int _set_process_priority(U32 p_func, int pid, int prio) __SVC_0;
 
+extern int k_delayed_send(int process_id, void * env, int delay);
+#define delayed_send(pid, env, delay) _delayed_send((U32)k_delayed_send, pid, env, delay)
+extern int _delayed_send(U32 p_func, int target_pid, void* message_envelope, int delay) __SVC_0;
+
 extern int k_send_message(int target_pid, void* message_envelope);
 #define send_message(pid, env) _send_message((U32)k_send_message, pid, env)
 extern int _send_message(U32 p_func, int target_pid, void* message_envelope) __SVC_0;

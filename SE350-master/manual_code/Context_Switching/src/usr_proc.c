@@ -86,8 +86,8 @@ void send_message_test(void)
 	message->message_type = 0;
 	message->delay = 0;
 	set_message(message, &msg, sizeof(char));
-	result = send_message(receiver_pid, message);
-	
+	result = delayed_send(receiver_pid, message, 5000);
+	//result = send_message(receiver_pid, message);
 	// Change this depending on the pid of this test
 	if (result == 0)
 	{
