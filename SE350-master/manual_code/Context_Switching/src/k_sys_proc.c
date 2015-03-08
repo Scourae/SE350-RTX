@@ -7,6 +7,7 @@
 #include "k_process.h"
 
 ENV_QUEUE t_queue;
+extern volatile uint32_t g_timer_count;
 extern PCB* gp_current_process;
 int send_message_preemption_flag = 1; // 0 for not preempting and 1 otherwise
 int uart_preemption_flag = 1; // 0 for not preempting and 1 otherwise
@@ -15,13 +16,15 @@ char g_input_buffer[INPUT_BUFFER_SIZE]; // buffer char array to hold the input
 int g_input_buffer_index = 0; // current index of the buffer such that all indices before this one holds a char
 U8 g_char_in;
 
-int delayed_send(int process_id, void * env, int delay){
+int k_delayed_send(int process_id, void * env, int delay){
 	ENVELOPE *lope = (ENVELOPE *) env;
 	int response = 0;
+	__disable_irq();
 	lope->delay = g_timer_count + delay;
 	send_message_preemption_flag = 0;
 	response = k_send_message(TIMER_PID, env);
 	send_message_preemption_flag = 1;
+	__enable_irq();
 	return response;
 }
 
@@ -143,7 +146,7 @@ void timer_i_proc(void) {
 	__disable_irq(); // make this process non blocking
 	
 	// TODO: figure out the LPC_TIM0
-	//LPC_TIM0->IR = BIT(0);
+	LPC_TIM0->IR = (1 << 0);
 	
 	lope = k_non_blocking_receive_message(TIMER_PID);
 	

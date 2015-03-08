@@ -15,8 +15,8 @@ void k_rtx_init(void)
 {
 	//SystemInit();
 	__disable_irq();
-	//timer_init(0); /* initialize timer 0 */
 	uart_irq_init(0);
+	timer_init(0); /* initialize timer 0 */
 	uart0_init();   
 	memory_init();
 	process_init();
