@@ -10,6 +10,7 @@
 ENV_QUEUE t_queue;
 extern volatile uint32_t g_timer_count;
 extern PCB* gp_current_process;
+extern KC_LIST g_kc_reg[KC_MAX_COMMANDS];
 int send_message_preemption_flag = 1; // 0 for not preempting and 1 otherwise
 
 char g_input_buffer[INPUT_BUFFER_SIZE]; // buffer char array to hold the input
@@ -322,10 +323,10 @@ void crt_proc(void)
 	while(1){
 		ENVELOPE* env = (ENVELOPE*) k_receive_message(NULL);
 		if (env->message_type == MSG_CRT_DISPLAY){
-			send_message(15, env);
+			k_send_message(15, env);
 			//pUart->IER |= IER_THRE;
 		} else {
-			release_memory_block(env->message);
+			k_release_memory_block(env->message);
 		}
 		
 	}

@@ -144,8 +144,8 @@ void send_message_test(void)
 void receive_message_test(void)
 {
 	int i = 0;
-	int sender_pid = 1;
-	int receiver_pid = 2;
+	//int sender_pid = 1;
+//	int receiver_pid = 2;
 	ENVELOPE* message = receive_message(NULL);
 	char* char_message = (char*) message->message;
 	// Change this depending on the pid of this test
@@ -176,7 +176,7 @@ void send_message_to_blocked(void)
 {
 	int i = 0;
 	int sender_pid = 1;
-	int receiver_pid = 3;
+//	int receiver_pid = 3;
 	ENVELOPE* message = receive_message(&sender_pid);
 	char* char_message = (char*) message->message;
 	// Change this depending on the pid of this test

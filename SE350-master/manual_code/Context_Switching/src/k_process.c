@@ -36,6 +36,7 @@ QUEUE ready_priority_queue[6];
 QUEUE blocked_on_memory_queue[6];
 PCB_NODE* blocked_on_receive_list = NULL;
 
+KC_LIST g_kc_reg[KC_MAX_COMMANDS];
 /**
  * Gets the process priority
  * Returns the process priority value or -1 if it does not find a process with the provide process ID

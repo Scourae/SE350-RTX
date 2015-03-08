@@ -69,19 +69,6 @@ PCB_NODE* remove_from_blocked_list(int pid)
  	}
  }
 
- ENVELOPE* dequeue_env_queue(ENV_QUEUE *q){
-	ENVELOPE *curHead = q->head;
-	if (q->head == q->tail)
-	{
-		q->head = NULL;
-		q->tail = NULL;
-	}
-	else
-		q->head = q->head->nextMsg;
-	curHead->nextMsg = NULL;
-	return curHead;
-}
-
  int k_send_message(int target_pid, void* message_envelope)
  {
 		PCB* gp_current_process = k_get_current_process();
@@ -123,7 +110,7 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		k_release_processor();
 	}
 	msg = dequeue_env_queue(&(gp_current_process->env_q));
-	sender_ID = &msg->sender_pid;
+	//sender_ID = &msg->sender_pid;
 	return (void*) msg;
  }
 
@@ -146,9 +133,9 @@ PCB_NODE* remove_from_blocked_list(int pid)
  {
 		ENVELOPE* msg;
 		PCB* gp_current_process = k_get_current_process();
-		PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
+		//PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
 		msg = dequeue_env_queue(&(gp_current_process->env_q));
-		sender_ID = &msg->sender_pid;
+		//sender_ID = &msg->sender_pid;
 		return (void*) msg;
  }
 
