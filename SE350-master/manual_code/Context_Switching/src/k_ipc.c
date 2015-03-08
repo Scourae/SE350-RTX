@@ -10,7 +10,7 @@
 #define HEADER_OFFSET 											DELAY_OFFSET + sizeof(U32)
 
 PCB_NODE* blocked_on_receive_list = NULL;
-
+extern int send_message_preemption_flag;
 void add_to_blocked_list(PCB_NODE* target)
 {
 	PCB_NODE* pointer = blocked_on_receive_list;
@@ -121,7 +121,7 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		{
 			remove_from_blocked_list(msg->destination_pid);
 			k_ready_process(msg->destination_pid);
-			if (gp_current_process->m_priority < targetPCB->m_priority)
+			if (gp_current_process->m_priority < targetPCB->m_priority && send_message_preemption_flag)
 				k_release_processor();
 		}
 		__enable_irq();

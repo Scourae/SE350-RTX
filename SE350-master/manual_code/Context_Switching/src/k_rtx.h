@@ -84,4 +84,5 @@ int isEmpty(QUEUE *q);
 ENVELOPE* msg_dequeue(ENV_QUEUE* q, int* sender_ID);
 void msg_enqueue(ENV_QUEUE* q, ENVELOPE* msg);
 int msg_empty(ENV_QUEUE* q);
+int k_send_message(int target_pid, void* message_envelope);
 #endif // ! K_RTX_H_

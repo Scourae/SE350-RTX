@@ -6,12 +6,17 @@
 #include "k_process.h"
 
 ENV_QUEUE t_queue;
+extern PCB* gp_current_process;
+int send_message_preemption_flag = 1; // 0 for not preempting and 1 otherwise
 
 int delayed_send(int process_id, void * env, int delay){
 	ENVELOPE *lope = (ENVELOPE *) env;
-	lope->delay = delay;
-	//return k_send_message(TIMER_PID, env);
-	return 0;
+	int response = 0;
+	lope->delay = g_timer_count + delay;
+	send_message_preemption_flag = 0;
+	response = k_send_message(TIMER_PID, env);
+	send_message_preemption_flag = 1;
+	return response;
 }
 
 /**
@@ -125,10 +130,14 @@ ENVELOPE* dequeue_env_queue(ENV_QUEUE *q){
 	return curHead;
 }
 
+
 void timer_i_proc(void) {
 	ENVELOPE* lope = NULL;
-	
+	int preemption_flag = 0;
 	__disable_irq(); // make this process non blocking
+	
+	// TODO: figure out the LPC_TIM0
+	//LPC_TIM0->IR = BIT(0);
 	
 	lope = k_non_blocking_receive_message(TIMER_PID);
 	
@@ -138,12 +147,23 @@ void timer_i_proc(void) {
 		lope = k_non_blocking_receive_message(TIMER_PID);
 	}
 	
+	send_message_preemption_flag = 0;
 	while (t_queue.head != NULL && t_queue.head->delay <= g_timer_count){
 		ENVELOPE* cur = dequeue_env_queue(&t_queue);
-		//k_send_message (cur->destination_pid, (void *) cur);
+		k_send_message (cur->destination_pid, (void *) cur);
+		if (gp_pcbs[cur->destination_pid]->m_priority > gp_current_process->m_priority){
+			preemption_flag = 1;
+		}
 	}
-	
+	send_message_preemption_flag = 1;
+	g_timer_count++;
 	__enable_irq();
+	
+	// TODO: figure how to switch out of this process
+	
+	if (preemption_flag){
+		k_release_processor();
+	}
 }
 
 void uart_i_proc(void) {}
