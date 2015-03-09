@@ -15,6 +15,8 @@
 #include "printf.h"
 #endif /* DEBUG_0 */
 
+extern volatile uint32_t g_timer_count;
+
 /* initialization table item */
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
 int passed = 0;
@@ -72,9 +74,26 @@ void proc6(void)
 	}	
 }
 
+/* 
+
+Expected behaviour:
+process 1 sends delayed message to process 2 and process 3
+preempt process 2 by making it the highest
+process 2 becomes blocked on receive
+goes to process 3
+process 3 becomes blocked on receive
+looping 1 until 3 becomes unblocked
+3 becomes unblocked
+alternating between 1 and 3 until 2 becomes unblocked
+2 becomes unblocked
+looping 2 forever
+
+*/
+
 // Assuming pid 1
 void send_message_test(void)
 {
+	int i = 0;
 	int sender_pid = 1;
 	int receiver_pid = 2;
 	ENVELOPE* message = (ENVELOPE*) request_memory_block();
@@ -86,7 +105,17 @@ void send_message_test(void)
 	message->message_type = 0;
 	message->delay = 0;
 	set_message(message, &msg, sizeof(char));
-	result = delayed_send(receiver_pid, message, 5000);
+	result = delayed_send(receiver_pid, message, 6000);
+	
+	receiver_pid = 3;
+	message = (ENVELOPE*) request_memory_block();
+	message->sender_pid = sender_pid;
+	message->destination_pid = receiver_pid;
+	message->nextMsg = NULL;
+	message->message_type = 0;
+	message->delay = 0;
+	set_message(message, &msg, sizeof(char));
+	result = delayed_send(receiver_pid, message, 4000);
 	//result = send_message(receiver_pid, message);
 	// Change this depending on the pid of this test
 	if (result == 0)
@@ -97,21 +126,27 @@ void send_message_test(void)
 	else
 		uart0_put_string("G009_test: test 1 FAIL\n\r");
 	
-	set_process_priority(receiver_pid, 0);
-	release_memory_block(message);
-	set_process_priority(sender_pid, 3);
+	set_process_priority(2, 0);
+	// release_memory_block(message);
+	// set_process_priority(sender_pid, 3);
 	while (1)
 	{
-		release_processor();
+		
+		if(i % 4000 == 0){
+			uart0_put_string("Looping 1\n\r");
+			release_processor();
+		}
+		i++;
 	}	
 }
 
 // Assuming pid 2
 void receive_message_test(void)
 {
-	int sender_pid = 1;
-	int receiver_pid = 2;
-	ENVELOPE* message = receive_message(&sender_pid);
+	int i = 0;
+	//int sender_pid = 1;
+//	int receiver_pid = 2;
+	ENVELOPE* message = receive_message(NULL);
 	char* char_message = (char*) message->message;
 	// Change this depending on the pid of this test
 	if (*char_message == 'x') 
@@ -123,70 +158,60 @@ void receive_message_test(void)
 	{
 		uart0_put_string("G009_test: test 2 FAIL\n\r");
 	}
-	set_process_priority(sender_pid, 0);
-	set_process_priority(receiver_pid, 3);
+	//set_process_priority(sender_pid, 0);
+	//set_process_priority(receiver_pid, 3);
 	while (1)
 	{
-		release_processor();
+		
+		if(i % 4000 == 0){
+			uart0_put_string("Looping 2\n\r");
+			release_processor();
+		}
+		i++;
 	}	
 }
 
 // Assuming pid 3
 void send_message_to_blocked(void)
 {
-	int sender_pid = 3;
-	int receiver_pid = 4;
-	ENVELOPE* message = (ENVELOPE*) request_memory_block();
-	char msg = 'x';
-	int result;
-	set_process_priority(receiver_pid, 0);
-	message->sender_pid = sender_pid;
-	message->destination_pid = receiver_pid;
-	message->nextMsg = NULL;
-	message->message_type = 0;
-	message->delay = 0;
-	set_message(message, &msg, sizeof(char));
-	result = send_message(receiver_pid, message);
-	
+	int i = 0;
+	int sender_pid = 1;
+//	int receiver_pid = 3;
+	ENVELOPE* message = receive_message(&sender_pid);
+	char* char_message = (char*) message->message;
 	// Change this depending on the pid of this test
-	if (result == 0)
+	if (*char_message == 'x') 
 	{
 		uart0_put_string("G009_test: test 3 OK\n\r");
 		passed++;
 	}
 	else
+	{
 		uart0_put_string("G009_test: test 3 FAIL\n\r");
-	
-	set_process_priority(sender_pid, 3);
-	release_memory_block(message);
-	set_process_priority(sender_pid, 3);
+	}
+	// set_process_priority(sender_pid, 0);
+	// set_process_priority(receiver_pid, 3);
 	while (1)
 	{
-		release_processor();
+			
+		if(i % 4000 == 0){
+			uart0_put_string("Looping 3\n\r");
+			release_processor();
+		}
+		i++;
 	}	
 }
 
 // Assuming pid 4
 void receive_message_to_blocked(void)
 {
-	int sender_pid = 3;
-	int receiver_pid = 4;
-	ENVELOPE* message = receive_message(&sender_pid);
-	char* char_message = (char*) message->message;
-	// Change this depending on the pid of this test
-	if (*char_message == 'x') 
-	{
-		uart0_put_string("G009_test: test 4 OK\n\r");
-		passed++;
-	}
-	else
-	{
-		uart0_put_string("G009_test: test 4 FAIL\n\r");
-	}
-	set_process_priority(sender_pid, 0);
-	set_process_priority(receiver_pid, 3);
+	int i = 0;
 	while (1)
 	{
-		release_processor();
+		if (i % 4000 == 0){
+			uart0_put_string("Looping 4\n\r");
+			release_processor();
+		}
+		i++;
 	}	
 }

@@ -10,11 +10,14 @@
 ENV_QUEUE t_queue;
 extern volatile uint32_t g_timer_count;
 extern PCB* gp_current_process;
+extern KC_LIST g_kc_reg[KC_MAX_COMMANDS];
 int send_message_preemption_flag = 1; // 0 for not preempting and 1 otherwise
 
 char g_input_buffer[INPUT_BUFFER_SIZE]; // buffer char array to hold the input
 int g_input_buffer_index = 0; // current index of the buffer such that all indices before this one holds a char
 U8 g_char_in;
+U32 g_char_out_index = 0;
+ENVELOPE* g_curr_p = NULL;
 
 int k_delayed_send(int process_id, void * env, int delay){
 	ENVELOPE *lope = (ENVELOPE *) env;
@@ -36,50 +39,26 @@ void null_proc(void) {
 		k_release_processor();
 	}
 }
-/*
-void enqueue_env(PCB *p, ENVELOPE *env) {
-	env->nextMsg = NULL;
-	if (p->first_msg == NULL)
+
+ENVELOPE* dequeue_env_queue(ENV_QUEUE *q){
+	ENVELOPE *curHead = q->head;
+	if (msg_empty(q)) return NULL;
+	if (q->head == q->tail)
 	{
-		p->first_msg = env;
-		p->last_msg = env;
+		q->head = NULL;
+		q->tail = NULL;
 	}
 	else
-	{
-		p->last_msg->nextMsg = env;
-		p->last_msg = p->last_msg->nextMsg;
-	}
-}*/
-
-/**
- * Dequeues the head of the queue
- * Returns a pointer to the dequeued PCB node
- */
-
-
-ENVELOPE* timer_dequeue(ENV_QUEUE *p) {
-	ENVELOPE *curHead = p->head;
-	if (msg_empty(p)) return NULL;
-	if (p->head == p->tail)
-	{
-		p->head = NULL;
-		p->tail = NULL;
-	}
-	else
-		p->head = p->head->nextMsg;
+		q->head = q->head->nextMsg;
 	curHead->nextMsg = NULL;
 	return curHead;
 }
-
-/*int is_empty_env(ENV_QUEUE *q) {
-	return (q->head == NULL);
-}*/
 
 ENVELOPE* k_non_blocking_receive_message(int pid){
 	PCB* timer = gp_pcbs[pid];
 	ENV_QUEUE* env_q = &(timer->env_q);
 	if(!msg_empty(env_q)){
-		return timer_dequeue(env_q);
+		return dequeue_env_queue(env_q);
 	}
 	return NULL;
 }
@@ -125,20 +104,6 @@ void sorted_insert(ENVELOPE* lope){
 		}
 	}
 }
-
-ENVELOPE* dequeue_env_queue(ENV_QUEUE *q){
-	ENVELOPE *curHead = q->head;
-	if (q->head == q->tail)
-	{
-		q->head = NULL;
-		q->tail = NULL;
-	}
-	else
-		q->head = q->head->nextMsg;
-	curHead->nextMsg = NULL;
-	return curHead;
-}
-
 
 void timer_i_proc(void) {
 	ENVELOPE* lope = NULL;
@@ -189,6 +154,37 @@ void uart_i_proc(void) {
 		/* read UART. Read RBR will clear the interrupt */
 		g_char_in = pUart->RBR;
 		
+		// Avoid interuption by only sending when mem blocks are avaliable
+		// Sends input to crt display
+		if (mem_empty() == 0)
+		{
+			int display_size;
+			char display_msg[3];
+			if (g_char_in == '\r')
+			{
+				display_size = 3;
+				display_msg[0] = '\n';
+				display_msg[1] = g_char_in;
+				display_msg[2] = '\0';
+			}
+			else
+			{
+				display_size = 2;
+				display_msg[0] = g_char_in;
+				display_msg[1] = '\0';
+			}
+			
+			msg = (ENVELOPE*) k_request_memory_block();
+			msg->sender_pid = UART_IPROC_PID;
+			msg->destination_pid = CRT_PID;
+			msg->nextMsg = NULL;
+			msg->message_type = MSG_CRT_DISPLAY;
+			msg->delay = 0;
+			set_message(msg, display_msg, display_size*sizeof(char));	
+			k_send_message(CRT_PID, msg);
+			g_input_buffer_index = 0;
+		}
+		
 #ifdef DEBUG_HOTKEYS		
 		if (g_char_in == DEBUG_HOTKEY_1)
 			k_print_ready_queue();
@@ -235,17 +231,103 @@ void uart_i_proc(void) {
 	} 
 	else if (IIR_IntId & IIR_THRE) 
 	{
-			// TODO
+			char* g_input;
+			if (g_curr_p == NULL)
+				g_curr_p = (ENVELOPE*) k_non_block_receive_message(NULL);
+			if (g_curr_p != NULL)
+			{
+				g_input = (char*) g_curr_p->message;
+				if (g_input[g_char_out_index] != '\0')
+				{
+					// print normal char
+					pUart->THR = g_input[g_char_out_index];
+					g_char_out_index++;
+				}
+				else
+				{
+					// done printing
+					pUart->THR = g_input[g_char_out_index];
+					k_release_memory_block(g_curr_p);
+					g_curr_p = NULL;
+					g_char_out_index = 0;
+				}
+			}
 	}    
 	__enable_irq();
 }
 
 void kcd_proc(void) 
 {
-	// TODO
+	ENVELOPE* msg;
+	int* sender;
+	int i;
+	while(1)
+	{
+		msg = (ENVELOPE*) k_receive_message(sender);
+		if (msg != NULL)
+		{
+			if (msg->message_type == MSG_COMMAND_REGISTRATION)
+			{
+				for (i = 0; i < KC_MAX_COMMANDS; i++)
+				{
+					if (g_kc_reg[i].pid == -1)
+					{
+						g_kc_reg[i].pid = *sender;
+						strcpy(msg->message, g_kc_reg[i].command);
+						break;
+					}
+				}
+			}
+			else if (msg->message_type == MSG_CONSOLE_INPUT)
+			{
+				int i = 0;
+				int j;
+				char command[KC_MAX_CHAR];
+				char* message_curr = msg->message;
+				while ((i < KC_MAX_CHAR)&&(message_curr[i] != ' ')&&(message_curr[i] != '\0'))
+				{
+					command[i] = message_curr[i];
+					i++;
+				}
+				command[i] = '\0';
+				
+				// find end of message 
+				while (message_curr[i] != '\0')
+				{
+					i++;
+				}
+				
+				for (j = 0; j < KC_MAX_COMMANDS; j++)
+				{
+					if (strcmp(command,g_kc_reg[j].command) == 0)
+					{
+						ENVELOPE* kcd_msg = (ENVELOPE*) k_request_memory_block();
+						kcd_msg->sender_pid = KCD_PID;
+						kcd_msg->destination_pid = g_kc_reg[j].pid;
+						kcd_msg->nextMsg = NULL;
+						kcd_msg->message_type = MSG_KCD_DISPATCH;
+						kcd_msg->delay = 0;
+						set_message(kcd_msg, message_curr, i*sizeof(char));	
+						k_send_message(KCD_PID, kcd_msg);
+						break;
+					}
+				}
+				k_release_memory_block(msg);
+			}
+		}
+	}
 }
 
 void crt_proc(void) 
 {
-	// TODC
+	while(1){
+		ENVELOPE* env = (ENVELOPE*) k_receive_message(NULL);
+		if (env->message_type == MSG_CRT_DISPLAY){
+			k_send_message(15, env);
+			//pUart->IER |= IER_THRE;
+		} else {
+			k_release_memory_block(env->message);
+		}
+		
+	}
 }

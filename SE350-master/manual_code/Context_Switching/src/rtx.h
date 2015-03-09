@@ -15,6 +15,7 @@
 #define LOW     2
 #define LOWEST  3
 #define NULL_PROC 4 /* the hidden priority for the null process only */
+#define SYS_PROC 5 /* special priority for system processes KCD, CRT, and Wall Clock (and set priority process)*/
 
 /* ----- Types ----- */
 typedef unsigned int U32;

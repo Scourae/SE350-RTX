@@ -21,8 +21,13 @@
 #define NUM_PROCS 16
 
 #define KCD_PID 12
+#define CRT_PID 13
 #define TIMER_PID 14
 #define UART_IPROC_PID 15
+
+// Keyboard command bounds
+#define KC_MAX_CHAR 10
+#define KC_MAX_COMMANDS 16
 
 #ifdef DEBUG_HOTKEY
 	#define DEBUG_HOTKEY_1 '!'
@@ -30,14 +35,19 @@
 	#define DEBUG_HOTKEY_3 '#'
 #endif
 
-#define MSG_CONSOLE_INPUT 1
-#define MSG_COMMAND_REGISTRATION 2
-
 #ifdef DEBUG_0
 	#define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
 #else
 	#define USR_SZ_STACK 0x100         /* user proc stack size 218B  */
 #endif /* DEBUG_0 */
+
+/* Process Priority. The bigger the number is, the lower the priority is*/
+#define HIGH    0
+#define MEDIUM  1
+#define LOW     2
+#define LOWEST  3
+#define NULL_PROC 4 /* the hidden priority for the null process only */
+#define SYS_PROC 5 /* special priority for system processes KCD, CRT, and Wall Clock (and set priority process)*/
 
 /*----- Types -----*/
 typedef unsigned char U8;
@@ -46,10 +56,20 @@ typedef unsigned int U32;
 /* process states, note we only assume three states in this example */
 typedef enum {NEW = 0, RDY, RUN, BLOCKED_ON_MEMORY, BLOCKED_ON_RECEIVE, INTRPT} PROC_STATE_E;  
 
-typedef struct env_queue{
-	ENVELOPE* head;
-	ENVELOPE* tail;
-} ENV_QUEUE;
+/* Message tyes */
+typedef enum {
+	MSG_DEFAULT = 0,
+	MSG_CONSOLE_INPUT,
+	MSG_COMMAND_REGISTRATION,
+	MSG_CRT_DISPLAY,
+	MSG_KCD_DISPATCH
+} MSG_TYPE_E;
+
+// Keyboard command list
+typedef struct kc_list {
+	char command [KC_MAX_CHAR];
+	int pid;
+} KC_LIST;
 
 /*
   PCB data structure definition.
@@ -95,5 +115,4 @@ int isEmpty(QUEUE *q);
 ENVELOPE* msg_dequeue(ENV_QUEUE* q, int* sender_ID);
 void msg_enqueue(ENV_QUEUE* q, ENVELOPE* msg);
 int msg_empty(ENV_QUEUE* q);
-int k_send_message(int target_pid, void* message_envelope);
 #endif // ! K_RTX_H_

@@ -12,7 +12,6 @@
 #include "printf.h"
 #endif
 
-uint8_t g_char_out;
 int g_switch_flag = 0;
 
 extern int k_release_processor(void);
