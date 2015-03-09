@@ -61,7 +61,7 @@ void process_init()
 	g_proc_table[0].m_priority = NULL_PROC;
 	g_proc_table[0].mpf_start_pc = &null_proc;
 	g_proc_table[0].m_stack_size = 0x100;
-	
+	/*
 	// Setting the stress_test_a Process in the initialization table
 	g_proc_table[7].m_pid = 7;
 	g_proc_table[7].m_priority = LOWEST;
@@ -91,30 +91,30 @@ void process_init()
 	g_proc_table[11].m_priority = SYS_PROC;
 	g_proc_table[11].mpf_start_pc = &wall_clock_display;
 	g_proc_table[11].m_stack_size = 0x100;
-	
+	*/
 	// Setting the kcd_proc Process in the initialization table
-	g_proc_table[12].m_pid = 12;
-	g_proc_table[12].m_priority = SYS_PROC;
-	g_proc_table[12].mpf_start_pc = &kcd_proc;
-	g_proc_table[12].m_stack_size = 0x100;
+	g_proc_table[7].m_pid = 7;
+	g_proc_table[7].m_priority = SYS_PROC;
+	g_proc_table[7].mpf_start_pc = &kcd_proc;
+	g_proc_table[7].m_stack_size = 0x100;
 	
 	// Setting the crt_proc Process in the initialization table
-	g_proc_table[13].m_pid = 13;
-	g_proc_table[13].m_priority = SYS_PROC;
-	g_proc_table[13].mpf_start_pc = &crt_proc;
-	g_proc_table[13].m_stack_size = 0x100;
+	g_proc_table[8].m_pid = 8;
+	g_proc_table[8].m_priority = SYS_PROC;
+	g_proc_table[8].mpf_start_pc = &crt_proc;
+	g_proc_table[8].m_stack_size = 0x100;
 	
 	// Setting the timer_i_proc Process in the initialization table
-	g_proc_table[14].m_pid = 14;
-	g_proc_table[14].m_priority = SYS_PROC;
-	g_proc_table[14].mpf_start_pc = &timer_i_proc;
-	g_proc_table[14].m_stack_size = 0x100;
+	g_proc_table[9].m_pid = 9;
+	g_proc_table[9].m_priority = SYS_PROC;
+	g_proc_table[9].mpf_start_pc = &timer_i_proc;
+	g_proc_table[9].m_stack_size = 0x100;
 	
 	// Setting the uart_i_proc Process in the initialization table
-	g_proc_table[15].m_pid = 15;
-	g_proc_table[15].m_priority = SYS_PROC;
-	g_proc_table[15].mpf_start_pc = &uart_i_proc;
-	g_proc_table[15].m_stack_size = 0x100;
+	g_proc_table[10].m_pid = 10;
+	g_proc_table[10].m_priority = SYS_PROC;
+	g_proc_table[10].mpf_start_pc = &uart_i_proc;
+	g_proc_table[10].m_stack_size = 0x100;
 	
 	// Setting the user processes in the initialization table
 	for ( i = 1; i < 7; i++ ) {
@@ -159,7 +159,7 @@ void process_init()
 	}
 	
 	// Adding the system processes to the appropriate ready queue
-	for (i = 12; i <= 13; i++) {
+	for (i = NUM_TEST_PROCS+1; i < NUM_PROCS; i++) {
 		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), gp_pcb_nodes[i]);
 	}
 

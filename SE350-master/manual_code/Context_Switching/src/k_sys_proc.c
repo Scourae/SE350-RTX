@@ -6,6 +6,7 @@
 #include "k_memory.h"
 #include "k_process.h"
 #include "uart_def.h"
+#include "printf.h"
 
 ENV_QUEUE t_queue;
 extern volatile uint32_t g_timer_count;
@@ -25,7 +26,7 @@ int k_delayed_send(int process_id, void * env, int delay){
 	__disable_irq();
 	lope->delay = g_timer_count + delay;
 	send_message_preemption_flag = 0;
-	response = k_send_message(TIMER_PID, env);
+	response = send_message(TIMER_PID, env);
 	send_message_preemption_flag = 1;
 	__enable_irq();
 	return response;
@@ -124,7 +125,7 @@ void timer_i_proc(void) {
 	send_message_preemption_flag = 0;
 	while (t_queue.head != NULL && t_queue.head->delay <= g_timer_count){
 		ENVELOPE* cur = dequeue_env_queue(&t_queue);
-		k_send_message (cur->destination_pid, (void *) cur);
+		send_message (cur->destination_pid, (void *) cur);
 		if (gp_pcbs[cur->destination_pid]->m_priority > gp_current_process->m_priority){
 			preemption_flag = 1;
 		}
@@ -181,7 +182,7 @@ void uart_i_proc(void) {
 			msg->message_type = MSG_CRT_DISPLAY;
 			msg->delay = 0;
 			set_message(msg, display_msg, display_size*sizeof(char));	
-			k_send_message(CRT_PID, msg);
+			send_message(CRT_PID, msg);
 			g_input_buffer_index = 0;
 		}
 		
@@ -221,7 +222,7 @@ void uart_i_proc(void) {
 				msg->message_type = MSG_CONSOLE_INPUT;
 				msg->delay = 0;
 				set_message(msg, g_input_buffer, g_input_buffer_index*sizeof(char));	
-				k_send_message(KCD_PID, msg);
+				send_message(KCD_PID, msg);
 				g_input_buffer_index = 0;
 			}
 		}
@@ -233,7 +234,7 @@ void uart_i_proc(void) {
 	{
 			char* g_input;
 			if (g_curr_p == NULL)
-				g_curr_p = (ENVELOPE*) k_non_block_receive_message(NULL);
+				g_curr_p = (ENVELOPE*) non_block_receive_message(NULL);
 			if (g_curr_p != NULL)
 			{
 				g_input = (char*) g_curr_p->message;
@@ -263,7 +264,7 @@ void kcd_proc(void)
 	int i;
 	while(1)
 	{
-		msg = (ENVELOPE*) k_receive_message(sender);
+		msg = (ENVELOPE*) receive_message(sender);
 		if (msg != NULL)
 		{
 			if (msg->message_type == MSG_COMMAND_REGISTRATION)
@@ -308,7 +309,7 @@ void kcd_proc(void)
 						kcd_msg->message_type = MSG_KCD_DISPATCH;
 						kcd_msg->delay = 0;
 						set_message(kcd_msg, message_curr, i*sizeof(char));	
-						k_send_message(KCD_PID, kcd_msg);
+						send_message(KCD_PID, kcd_msg);
 						break;
 					}
 				}
@@ -321,9 +322,9 @@ void kcd_proc(void)
 void crt_proc(void) 
 {
 	while(1){
-		ENVELOPE* env = (ENVELOPE*) k_receive_message(NULL);
+		ENVELOPE* env = (ENVELOPE*) receive_message(NULL);
 		if (env->message_type == MSG_CRT_DISPLAY){
-			k_send_message(15, env);
+			send_message(15, env);
 			//pUart->IER |= IER_THRE;
 		} else {
 			k_release_memory_block(env->message);

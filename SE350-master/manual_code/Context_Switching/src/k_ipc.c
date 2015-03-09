@@ -132,7 +132,7 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		PCB* gp_current_process = k_get_current_process();
 		//PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
 		msg = dequeue_env_queue(&(gp_current_process->env_q));
-		//sender_ID = &msg->sender_pid;
+		sender_ID = &msg->sender_pid;
 		return (void*) msg;
  }
 

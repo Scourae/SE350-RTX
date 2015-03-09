@@ -99,7 +99,7 @@ void memory_init(void)
 	beginMemMap = (U8*) p_end;
 	beginHeap = (U8*) beginMemMap + NUM_OF_MEMBLOCKS;
 	
-	for (i = 0; i < 20; i++)
+	for (i = 0; i < NUM_OF_MEMBLOCKS; i++)
 	{
 		*(beginMemMap+i) = 0;
 	}
