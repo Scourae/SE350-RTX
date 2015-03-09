@@ -26,7 +26,7 @@ int k_delayed_send(int process_id, void * env, int delay){
 	__disable_irq();
 	lope->delay = g_timer_count + delay;
 	send_message_preemption_flag = 0;
-	response = send_message(TIMER_PID, env);
+	response = k_send_message(TIMER_PID, env);
 	send_message_preemption_flag = 1;
 	__enable_irq();
 	return response;
