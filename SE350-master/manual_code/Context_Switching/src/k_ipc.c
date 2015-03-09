@@ -71,7 +71,7 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		ENVELOPE* msg = (ENVELOPE*) message_envelope;
 		PCB* gp_current_process = gp_pcb_nodes[msg->sender_pid]->p_pcb;
 		PCB* targetPCB = gp_pcb_nodes[target_pid]->p_pcb;
-	 __disable_irq();
+	  __disable_irq();
 		msg->nextMsg = NULL;
 		msg_enqueue(&(targetPCB->env_q), msg);
 		if (targetPCB->m_state == BLOCKED_ON_RECEIVE)
