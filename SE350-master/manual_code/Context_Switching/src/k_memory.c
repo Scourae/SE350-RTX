@@ -99,7 +99,7 @@ void memory_init(void)
 	beginMemMap = (U8*) p_end;
 	beginHeap = (U8*) beginMemMap + NUM_OF_MEMBLOCKS;
 	
-	for (i = 0; i < 20; i++)
+	for (i = 0; i < NUM_OF_MEMBLOCKS; i++)
 	{
 		*(beginMemMap+i) = 0;
 	}
@@ -153,7 +153,9 @@ void *k_request_memory_block(void) {
 	while(mem_empty() == 1)
 	{
 		k_block_current_processs();
+		__enable_irq();
 		k_release_processor();
+		__disable_irq();
 	}
 	
 	for (i = 0; i < NUM_OF_MEMBLOCKS; i++)
@@ -172,16 +174,10 @@ void *k_request_memory_block(void) {
 	return (void*) (rVoid+i*MEMORY_BLOCK_SIZE);
 }
 
-/**
- * Releases a memory block
- */
-int k_release_memory_block(void *p_mem_blk) {
+int k_non_block_release_memory_block(void *p_mem_blk)
+{
 	int index;
-	
-	/*#ifdef DEBUG_0 
-		printf("k_release_memory_block: releasing block @ 0x%x\n\r", p_mem_blk);
-	#endif */
-	
+
 	if (p_mem_blk == NULL){
 		return RTX_ERR;
 	}
@@ -196,6 +192,14 @@ int k_release_memory_block(void *p_mem_blk) {
 	
 	index = ((U8*)p_mem_blk - beginHeap)/MEMORY_BLOCK_SIZE;
 	*(beginMemMap + index) = 0;
+	return RTX_OK;
+}
+
+/**
+ * Releases a memory block
+ */
+int k_release_memory_block(void *p_mem_blk) {
+	k_non_block_release_memory_block(p_mem_blk);
 	k_ready_first_blocked();
 	k_release_processor();
 	return RTX_OK;

@@ -6,11 +6,13 @@
 #include "k_memory.h"
 #include "k_process.h"
 #include "uart_def.h"
+#include "printf.h"
 
 ENV_QUEUE t_queue;
 extern volatile uint32_t g_timer_count;
 extern PCB* gp_current_process;
 extern KC_LIST g_kc_reg[KC_MAX_COMMANDS];
+int uart_asm_preemption_flag = 0;
 int send_message_preemption_flag = 1; // 0 for not preempting and 1 otherwise
 
 char g_input_buffer[INPUT_BUFFER_SIZE]; // buffer char array to hold the input
@@ -36,6 +38,7 @@ int k_delayed_send(int process_id, void * env, int delay){
  */
 void null_proc(void) {
 	while (1) {
+		printf("Looping null process\n\r");
 		k_release_processor();
 	}
 }
@@ -145,6 +148,7 @@ void uart_i_proc(void) {
 	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *)LPC_UART0;
 	ENVELOPE* msg;
 	__disable_irq();
+	uart_asm_preemption_flag = 0;
 	
 	/* Reading IIR automatically acknowledges the interrupt */
 	IIR_IntId = (pUart->IIR) >> 1 ; // skip pending bit in IIR 
@@ -182,7 +186,7 @@ void uart_i_proc(void) {
 			msg->delay = 0;
 			set_message(msg, display_msg, display_size*sizeof(char));	
 			k_send_message(CRT_PID, msg);
-			g_input_buffer_index = 0;
+			uart_asm_preemption_flag = 1;
 		}
 		
 #ifdef DEBUG_HOTKEYS		
@@ -223,6 +227,7 @@ void uart_i_proc(void) {
 				set_message(msg, g_input_buffer, g_input_buffer_index*sizeof(char));	
 				k_send_message(KCD_PID, msg);
 				g_input_buffer_index = 0;
+				uart_asm_preemption_flag = 1;
 			}
 		}
 		
@@ -233,7 +238,7 @@ void uart_i_proc(void) {
 	{
 			char* g_input;
 			if (g_curr_p == NULL)
-				g_curr_p = (ENVELOPE*) k_non_block_receive_message(NULL);
+				g_curr_p = (ENVELOPE*) k_non_block_receive_message(UART_IPROC_PID);
 			if (g_curr_p != NULL)
 			{
 				g_input = (char*) g_curr_p->message;
@@ -246,8 +251,10 @@ void uart_i_proc(void) {
 				else
 				{
 					// done printing
+					if (gp_pcb_nodes[UART_IPROC_PID]->p_pcb->env_q.head == NULL)
+						pUart->IER &= (~IER_THRE);
 					pUart->THR = g_input[g_char_out_index];
-					k_release_memory_block(g_curr_p);
+					k_non_block_release_memory_block(g_curr_p);
 					g_curr_p = NULL;
 					g_char_out_index = 0;
 				}
@@ -263,7 +270,7 @@ void kcd_proc(void)
 	int i;
 	while(1)
 	{
-		msg = (ENVELOPE*) k_receive_message(sender);
+		msg = (ENVELOPE*) receive_message(sender);
 		if (msg != NULL)
 		{
 			if (msg->message_type == MSG_COMMAND_REGISTRATION)
@@ -308,7 +315,7 @@ void kcd_proc(void)
 						kcd_msg->message_type = MSG_KCD_DISPATCH;
 						kcd_msg->delay = 0;
 						set_message(kcd_msg, message_curr, i*sizeof(char));	
-						k_send_message(KCD_PID, kcd_msg);
+						send_message(KCD_PID, kcd_msg);
 						break;
 					}
 				}
@@ -321,10 +328,11 @@ void kcd_proc(void)
 void crt_proc(void) 
 {
 	while(1){
-		ENVELOPE* env = (ENVELOPE*) k_receive_message(NULL);
+		ENVELOPE* env = (ENVELOPE*) receive_message(NULL);
+		LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *)LPC_UART0;
 		if (env->message_type == MSG_CRT_DISPLAY){
-			k_send_message(15, env);
-			//pUart->IER |= IER_THRE;
+			send_message(UART_IPROC_PID, env);
+			pUart->IER |= IER_THRE;
 		} else {
 			k_release_memory_block(env->message);
 		}

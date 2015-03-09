@@ -29,16 +29,16 @@
 #define KC_MAX_CHAR 10
 #define KC_MAX_COMMANDS 16
 
-#ifdef DEBUG_HOTKEY
-#define DEBUG_HOTKEY_1 '!'
-#define DEBUG_HOTKEY_2 '@'
-#define DEBUG_HOTKEY_3 '#'
+#ifdef DEBUG_HOTKEYS
+	#define DEBUG_HOTKEY_1 '!'
+	#define DEBUG_HOTKEY_2 '@'
+	#define DEBUG_HOTKEY_3 '#'
 #endif
 
 #ifdef DEBUG_0
-#define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
+	#define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
 #else
-#define USR_SZ_STACK 0x100         /* user proc stack size 218B  */
+	#define USR_SZ_STACK 0x100         /* user proc stack size 218B  */
 #endif /* DEBUG_0 */
 
 /* Process Priority. The bigger the number is, the lower the priority is*/
