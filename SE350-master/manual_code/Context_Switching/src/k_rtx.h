@@ -18,12 +18,12 @@
 #define NULL 0
 
 #define NUM_TEST_PROCS 6
-#define NUM_PROCS 11
+#define NUM_PROCS 16
 
-#define KCD_PID 7
-#define CRT_PID 8
-#define TIMER_PID 9
-#define UART_IPROC_PID 10
+#define KCD_PID 12
+#define CRT_PID 13
+#define TIMER_PID 14
+#define UART_IPROC_PID 15
 
 // Keyboard command bounds
 #define KC_MAX_CHAR 10
