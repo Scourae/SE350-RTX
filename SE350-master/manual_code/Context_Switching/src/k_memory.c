@@ -153,7 +153,9 @@ void *k_request_memory_block(void) {
 	while(mem_empty() == 1)
 	{
 		k_block_current_processs();
+		__enable_irq();
 		k_release_processor();
+		__disable_irq();
 	}
 	
 	for (i = 0; i < NUM_OF_MEMBLOCKS; i++)

@@ -71,7 +71,7 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		PCB* gp_current_process = k_get_current_process();
 		ENVELOPE* msg = (ENVELOPE*) message_envelope;
 		PCB* targetPCB = gp_pcb_nodes[target_pid]->p_pcb;
-	 __disable_irq();
+	  __disable_irq();
 		msg->nextMsg = NULL;
 		msg_enqueue(&(targetPCB->env_q), msg);
 		if (targetPCB->m_state == BLOCKED_ON_RECEIVE)
@@ -83,7 +83,9 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		}
 		else if (targetPCB->m_pid == UART_IPROC_PID){
 			uart_preemption_flag = 1;
+			__enable_irq();
 			k_release_processor();
+			__disable_irq();
 		}
 		__enable_irq();
 		return 0;

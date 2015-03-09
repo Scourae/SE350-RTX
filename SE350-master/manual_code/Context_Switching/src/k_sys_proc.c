@@ -37,6 +37,7 @@ int k_delayed_send(int process_id, void * env, int delay){
  */
 void null_proc(void) {
 	while (1) {
+		printf("Looping null process\n\r");
 		k_release_processor();
 	}
 }
