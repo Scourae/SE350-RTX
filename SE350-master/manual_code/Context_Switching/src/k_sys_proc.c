@@ -125,7 +125,7 @@ void timer_i_proc(void) {
 	send_message_preemption_flag = 0;
 	while (t_queue.head != NULL && t_queue.head->delay <= g_timer_count){
 		ENVELOPE* cur = dequeue_env_queue(&t_queue);
-		send_message (cur->destination_pid, (void *) cur);
+		k_send_message (cur->destination_pid, (void *) cur);
 		if (gp_pcbs[cur->destination_pid]->m_priority > gp_current_process->m_priority){
 			preemption_flag = 1;
 		}
