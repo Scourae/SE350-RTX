@@ -331,3 +331,110 @@ void crt_proc(void)
 		
 	}
 }
+
+int wall_clock_count =0 ;
+int w_secs,w_mins,w_hrs;
+int time=0;
+int show_wclock = 1;
+
+void 24hr_wall_clock() {
+	
+	/*sends message to kcd to register the command types*/
+	ENVELOPE *msg = (ENVELOPE *)request_memory_block();
+	msg->message_type = MSG_COMMAND_REGISTRATION;
+	msg->message="%WT" + '\0';
+	k_send_message(KCD_PID, msg);		
+		
+	msg = (ENVELOPE *)request_memory_block();
+	msg->message_type = MSG_COMMAND_REGISTRATION;
+	msg->message="%WS" + '\0';
+	k_send_message(KCD_PID, msg);	
+	
+	msg = (ENVELOPE *)request_memory_block();
+	msg->message_type = MSG_COMMAND_REGISTRATION;
+	msg->message="%WT" + '\0';
+	k_send_message(KCD_PID, msg);	
+	
+	
+	
+	while(1){
+		
+			ENVELOPE * msg=k_receive_message(NULL);
+				
+			if(msg->message_type == MSG_WALL_CLOCK && 
+				msg->sender_pid == WALL_CLOCK_PID && show_wclock ==1) {
+					
+				ENVELOPE * w_clock = (ENVELOPE*) k_request_memory_block();
+												
+						w_clock->message_type = MSG_CRT_DISPATCH;
+						
+						int curr_time = g_timer_count - (wall_clock_count++);
+						w_secs= (curr_time /1000)%60;			
+						//1000s * 60s/min
+						w_mins = (curr_time/(60000))%60;
+						// 1hr= 1000*60*60
+						w_hours= (curr_time/(3600000))%24;
+						
+						msg->message=""+w_hours+ ":" + w_mins + ":" + w_secs + '\0';
+						send_message(CRT_PID, msg->message);	
+			}			
+			
+				if (msg->message[0] == '%' && crt_message->message[1] == 'W' && crt_message->message[2]== 'R') {
+					show_wclock = 1;
+					ENVELOPE *msg =(ENVELOPE *) request_memory_block();
+					msg->message_type=MSG_WALL_CLOCK;			
+					msg->sender_pid=WALL_CLOCK_PID;
+					msg->destination_pid=WALL_CLOCK_PID;
+					msg->message="NOTHING";
+					
+					w_secs=0;
+					w_mins=0;
+					w_hours=0;
+					
+					time = 0;			
+						wall_clock_count=g_timer_count;
+					
+					delayed_send(WALL_CLOCK_PID, msg->message,1000);		
+					
+				}
+			 if (msg->message[0] == '%' && msgm->message[1] == 'W' && msg->message[2]== 'S') {
+					show_wclock = 1;
+				 int h1,h2,m1,m2,s1,s2;
+					ENVELOPE *msg =(ENVELOPE *) request_memory_block();
+					msg->message_type=MSG_WALL_CLOCK;		
+
+					h1=msg->message[4];
+					h2=msg->message[5];
+				 
+					h=h1*10 + h2;
+				 
+					m1=msg->message[7];
+					m2=msg->message[8];
+				 
+					m=m1*10 + m2;
+				 
+					s1=msg->message[10];
+					s2=msg->message[11];
+				 
+					s= s1*10 + s2;
+				 
+					w_secs=s;
+					w_mins=m;
+					w_hours=h;
+					time = g_timer_count-wall_clock_count;
+					
+					msg->message=""+w_hours+ ":" + w_mins + ":" + w_secs + '\0';
+					delayed_send(CRT_PID, crt_message->message,1000);		
+					
+				}
+			
+			
+			else if (crt_message->message[0] == '%' && crt_message->message[1] == 'W' && crt_message->message[2]== 'T') {
+				show_wclock=0;
+			}
+				
+	}//end while
+	
+}
+
+
