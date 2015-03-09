@@ -12,7 +12,7 @@
 #include "printf.h"
 #endif
 
-int g_switch_flag = 0;
+extern int uart_asm_preemption_flag;
 
 extern int k_release_processor(void);
 /**
@@ -161,7 +161,7 @@ __asm void UART0_IRQHandler(void)
 	IMPORT k_release_processor
 	PUSH{r4-r11, lr}
 	BL uart_i_proc
-	LDR R4, =__cpp(&g_switch_flag)
+	LDR R4, =__cpp(&uart_asm_preemption_flag)
 	LDR R4, [R4]
 	MOV R5, #0     
 	CMP R4, R5

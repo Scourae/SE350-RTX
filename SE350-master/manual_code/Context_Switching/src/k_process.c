@@ -445,22 +445,23 @@ PCB* k_get_current_process()
 void k_print_ready_queue()
 {
 	int i = 0;
-	uart1_put_string("\n\r\n\r----- PROCESSES CURRENTLY IN READY QUEUE -----\n\r\n\r");
-	uart1_put_string("Current running process with PID ");
-	uart1_put_char(gp_current_process->m_pid);
-	uart1_put_string("\n\r");
+	char num = '0';
+	uart0_put_string("\n\r\n\r----- PROCESSES CURRENTLY IN READY QUEUE -----\n\r\n\r");
+	uart0_put_string("Current running process with PID ");
+	uart0_put_char(num+gp_current_process->m_pid);
+	uart0_put_string("\n\r");
 	
 	for (i = 0; i < 4; i++){
 		if(!isEmpty(&ready_priority_queue[i])){
 			PCB_NODE* cur = ready_priority_queue[i].head;
-			uart1_put_string("\n\rPriority ");
-			uart1_put_char(i);
-			uart1_put_string(":\n\r");
+			uart0_put_string("\n\rPriority ");
+			uart0_put_char(num+i);
+			uart0_put_string(":\n\r");
 			
 			while(cur != NULL){
-				uart1_put_string("\t Process with PID ");
-				uart1_put_char(cur->p_pcb->m_pid);
-				uart1_put_string("\n\r");
+				uart0_put_string("\t Process with PID ");
+				uart0_put_char(num+cur->p_pcb->m_pid);
+				uart0_put_string("\n\r");
 				cur = cur->next;
 			}
 		}
@@ -471,19 +472,20 @@ void k_print_ready_queue()
 void k_print_blocked_on_memory_queue()
 {
 	int i = 0;
-	uart1_put_string("\n\r\n\r----- PROCESSES CURRENTLY IN BLOCKED ON MEMORY QUEUE -----\n\r");
+	char num = '0';
+	uart0_put_string("\n\r\n\r----- PROCESSES CURRENTLY IN BLOCKED ON MEMORY QUEUE -----\n\r");
 	
 	for (i = 0; i < 4; i++){
 		if(!isEmpty(&blocked_on_memory_queue[i])){
 			PCB_NODE* cur = blocked_on_memory_queue[i].head;
-			uart1_put_string("\n\rPriority ");
-			uart1_put_char(i);
-			uart1_put_string(":\n\r");
+			uart0_put_string("\n\rPriority ");
+			uart0_put_char(num+i);
+			uart0_put_string(":\n\r");
 			
 			while(cur != NULL){
-				uart1_put_string("\t Process with PID ");
-				uart1_put_char(cur->p_pcb->m_pid);
-				uart1_put_string("\n\r");
+				uart0_put_string("\t Process with PID ");
+				uart0_put_char(num+cur->p_pcb->m_pid);
+				uart0_put_string("\n\r");
 				cur = cur->next;
 			}
 		}

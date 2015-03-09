@@ -29,7 +29,7 @@
 #define KC_MAX_CHAR 10
 #define KC_MAX_COMMANDS 16
 
-#ifdef DEBUG_HOTKEY
+#ifdef DEBUG_HOTKEYS
 	#define DEBUG_HOTKEY_1 '!'
 	#define DEBUG_HOTKEY_2 '@'
 	#define DEBUG_HOTKEY_3 '#'

@@ -34,7 +34,7 @@ void set_message(void* envelope, void* message, int msg_bytes_size);
 
 int k_send_message(int target_pid, void* message_envelope);
 void* k_receive_message(int* sender_ID);
-void* k_non_block_receive_message(int* sender_ID);
+void* k_non_block_receive_message(int destination_ID);
 void k_print_blocked_on_receive_queue(void);
 
 #define __SVC_0  __svc_indirect(0)
@@ -45,9 +45,5 @@ extern int _send_message(U32 p_func, int target_pid, void* message_envelope) __S
 extern void* k_receive_message(int* sender);
 #define receive_message(sender) _receive_message((U32)k_receive_message, sender)
 extern void* _receive_message(U32 p_func, int* sender) __SVC_0;
-
-extern void* k_non_block_receive_message(int* sender);
-#define non_block_receive_message(sender) _non_block_receive_message((U32)k_receive_message, sender)
-extern void* _non_block_receive_message(U32 p_func, int* sender) __SVC_0;
 
 #endif

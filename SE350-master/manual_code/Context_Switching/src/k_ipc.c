@@ -68,8 +68,8 @@ PCB_NODE* remove_from_blocked_list(int pid)
 
  int k_send_message(int target_pid, void* message_envelope)
  {
-		PCB* gp_current_process = k_get_current_process();
 		ENVELOPE* msg = (ENVELOPE*) message_envelope;
+		PCB* gp_current_process = gp_pcb_nodes[msg->sender_pid]->p_pcb;
 		PCB* targetPCB = gp_pcb_nodes[target_pid]->p_pcb;
 	 __disable_irq();
 		msg->nextMsg = NULL;
@@ -80,10 +80,6 @@ PCB_NODE* remove_from_blocked_list(int pid)
 			k_ready_process(msg->destination_pid);
 			if ((gp_current_process->m_priority < targetPCB->m_priority)&& send_message_preemption_flag)
 				k_release_processor();
-		}
-		else if (targetPCB->m_pid == UART_IPROC_PID){
-			uart_preemption_flag = 1;
-			k_release_processor();
 		}
 		__enable_irq();
 		return 0;
@@ -107,7 +103,7 @@ PCB_NODE* remove_from_blocked_list(int pid)
 		k_release_processor();
 	}
 	msg = dequeue_env_queue(&(gp_current_process->env_q));
-	//sender_ID = &msg->sender_pid;
+	sender_ID = (int*) &msg->sender_pid;
 	return (void*) msg;
  }
 
@@ -126,27 +122,32 @@ PCB_NODE* remove_from_blocked_list(int pid)
 	 }
  }
  
- void* k_non_block_receive_message(int* sender_ID)
+ void* k_non_block_receive_message(int destination_ID)
  {
 		ENVELOPE* msg;
-		PCB* gp_current_process = k_get_current_process();
-		//PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
+		PCB* gp_current_process = gp_pcb_nodes[destination_ID]->p_pcb;
 		msg = dequeue_env_queue(&(gp_current_process->env_q));
-		sender_ID = (int*) &msg->sender_pid;
 		return (void*) msg;
  }
 
 void k_print_blocked_on_receive_queue_helper(int priority){
 	PCB_NODE* cur = blocked_on_receive_list;
-	
+	char num = '0';
+	while (cur != NULL)
+	{
+		if (cur->p_pcb->m_priority == priority)
+			break;
+		cur = cur->next;
+	}
+	if (cur == NULL) return;
+	uart0_put_string("\n\rPriority ");
+	uart0_put_char(num+priority);
+	uart0_put_string(":\n\r");
 	while(cur != NULL){
-		uart1_put_string("\n\rPriority ");
-		uart1_put_char(priority);
-		uart1_put_string(":\n\r");
 		if(cur->p_pcb->m_priority == priority){
-				uart1_put_string("\t Process with PID ");
-			  uart1_put_char(cur->p_pcb->m_pid);
-				uart1_put_string("\n\r");
+				uart0_put_string("\t Process with PID ");
+			  uart0_put_char(num+cur->p_pcb->m_pid);
+				uart0_put_string("\n\r");
 		}
 		cur = cur->next;
 	} 
@@ -156,7 +157,7 @@ void k_print_blocked_on_receive_queue_helper(int priority){
 void k_print_blocked_on_receive_queue()
 {
 	int i = 0;
-	uart1_put_string("\n\r\n\r----- PROCESSES CURRENTLY IN BLOCKED ON RECEIVE QUEUE -----\n\r");
+	uart0_put_string("\n\r\n\r----- PROCESSES CURRENTLY IN BLOCKED ON RECEIVE QUEUE -----\n\r");
 
 	for(i = 0; i < 4; i++){
 		k_print_blocked_on_receive_queue_helper(i);
