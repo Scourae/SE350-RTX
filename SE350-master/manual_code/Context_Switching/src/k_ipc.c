@@ -1,10 +1,7 @@
 #include "k_ipc.h"
 #include "k_memory.h"
 #include "k_process.h"
-
-#ifdef DEBUG_0
-	#include "printf.h"
-#endif /* DEBUG_0 */
+#include "uart_polling.h"
 
 extern PCB_NODE* blocked_on_receive_list;
 extern int send_message_preemption_flag;
@@ -159,13 +156,18 @@ PCB_NODE* remove_from_blocked_list(int pid)
 	 }
  }
  
+ // HotKey #3 helper
 void k_print_blocked_on_receive_queue_helper(int priority){
 	PCB_NODE* cur = blocked_on_receive_list;
 	
 	while(cur != NULL){
-		printf("\n\rPriority %d:\n\r", priority);
+		uart1_put_string("\n\rPriority ");
+		uart1_put_char(priority);
+		uart1_put_string(":\n\r");
 		if(cur->p_pcb->m_priority == priority){
-				printf("\t Process with PID %d\n\r", cur->p_pcb->m_pid);				
+				uart1_put_string("\t Process with PID ");
+			  uart1_put_char(cur->p_pcb->m_pid);
+				uart1_put_string("\n\r");
 		}
 		cur = cur->next;
 	} 
@@ -175,7 +177,7 @@ void k_print_blocked_on_receive_queue_helper(int priority){
 void k_print_blocked_on_receive_queue()
 {
 	int i = 0;
-	printf("\n\r\n\r----- PROCESSES CURRENTLY IN BLOCKED ON RECEIVE QUEUE -----\n\r");
+	uart1_put_string("\n\r\n\r----- PROCESSES CURRENTLY IN BLOCKED ON RECEIVE QUEUE -----\n\r");
 
 	for(i = 0; i < 4; i++){
 		k_print_blocked_on_receive_queue_helper(i);

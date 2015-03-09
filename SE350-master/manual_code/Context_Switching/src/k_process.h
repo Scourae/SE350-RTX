@@ -24,8 +24,11 @@ void k_block_current_processs(void);    /* take the current process and put it i
 void k_ready_first_blocked(void);
 void k_ready_process(int pid);
 PCB* k_get_current_process(void);
-void k_print_ready_queue(void);
-void k_print_blocked_on_memory_queue(void);
+
+#ifdef DEBUG_HOTKEYS	
+	void k_print_ready_queue(void);
+	void k_print_blocked_on_memory_queue(void);
+#endif
 
 extern U32 *alloc_stack(U32 size_b);   /* allocate stack for a process */
 extern void __rte(void);               /* pop exception stack frame */

@@ -25,18 +25,18 @@
 #define UART_IPROC_PID 15
 
 #ifdef DEBUG_HOTKEY
-#define DEBUG_HOTKEY_1 '!'
-#define DEBUG_HOTKEY_2 '@'
-#define DEBUG_HOTKEY_3 '#'
+	#define DEBUG_HOTKEY_1 '!'
+	#define DEBUG_HOTKEY_2 '@'
+	#define DEBUG_HOTKEY_3 '#'
 #endif
 
 #define MSG_CONSOLE_INPUT 1
 #define MSG_COMMAND_REGISTRATION 2
 
 #ifdef DEBUG_0
-#define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
+	#define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
 #else
-#define USR_SZ_STACK 0x100         /* user proc stack size 218B  */
+	#define USR_SZ_STACK 0x100         /* user proc stack size 218B  */
 #endif /* DEBUG_0 */
 
 /*----- Types -----*/
