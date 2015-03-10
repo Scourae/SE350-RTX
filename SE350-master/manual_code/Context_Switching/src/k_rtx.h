@@ -20,6 +20,7 @@
 #define NUM_TEST_PROCS 6
 #define NUM_PROCS 16
 
+#define WALL_CLOCK_PID 11
 #define KCD_PID 12
 #define CRT_PID 13
 #define TIMER_PID 14
@@ -116,4 +117,33 @@ int isEmpty(QUEUE *q);
 ENVELOPE* msg_dequeue(ENV_QUEUE* q, int* sender_ID);
 void msg_enqueue(ENV_QUEUE* q, ENVELOPE* msg);
 int msg_empty(ENV_QUEUE* q);
+
+#define __SVC_0  __svc_indirect(0)
+
+extern int k_release_processor(void);
+#define release_processor() _release_processor((U32)k_release_processor)
+extern int __SVC_0 _release_processor(U32 p_func);
+
+extern void *k_request_memory_block(void);
+#define request_memory_block() _request_memory_block((U32)k_request_memory_block)
+extern void *_request_memory_block(U32 p_func) __SVC_0;
+/* __SVC_0 can also be put at the end of the function declaration */
+
+extern int k_release_memory_block(void *);
+#define release_memory_block(p_mem_blk) _release_memory_block((U32)k_release_memory_block, p_mem_blk)
+extern int _release_memory_block(U32 p_func, void *p_mem_blk) __SVC_0;
+
+extern int k_get_process_priority(int pid);
+#define get_process_priority(pid) _get_process_priority((U32)k_get_process_priority, pid)
+extern int _get_process_priority(U32 p_func, int pid) __SVC_0;
+/* __SVC_0 can also be put at the end of the function declaration */
+
+extern int k_set_process_priority(int pid, int prio);
+#define set_process_priority(pid, prio) _set_process_priority((U32)k_set_process_priority, pid, prio)
+extern int _set_process_priority(U32 p_func, int pid, int prio) __SVC_0;
+
+extern int k_delayed_send(int process_id, void * env, int delay);
+#define delayed_send(pid, env, delay) _delayed_send((U32)k_delayed_send, pid, env, delay)
+extern int _delayed_send(U32 p_func, int target_pid, void* message_envelope, int delay) __SVC_0;
+
 #endif // ! K_RTX_H_

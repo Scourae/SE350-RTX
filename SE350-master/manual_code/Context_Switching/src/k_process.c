@@ -89,7 +89,7 @@ void process_init()
 	// Setting the wall_clock_display Process in the initialization table
 	g_proc_table[11].m_pid = 11;
 	g_proc_table[11].m_priority = SYS_PROC;
-	g_proc_table[11].mpf_start_pc = &wall_clock_display;
+	g_proc_table[11].mpf_start_pc = &wall_clock_proc;
 	g_proc_table[11].m_stack_size = 0x100;
 	
 	// Setting the kcd_proc Process in the initialization table
@@ -159,7 +159,7 @@ void process_init()
 	}
 	
 	// Adding the system processes to the appropriate ready queue
-	for (i = 12; i <= 13; i++) {
+	for (i = 11; i <= 13; i++) {
 		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), gp_pcb_nodes[i]);
 	}
 
@@ -446,22 +446,22 @@ void k_print_ready_queue()
 {
 	int i = 0;
 	char num = '0';
-	uart0_put_string("\n\r\n\r----- PROCESSES CURRENTLY IN READY QUEUE -----\n\r\n\r");
-	uart0_put_string("Current running process with PID ");
-	uart0_put_char(num+gp_current_process->m_pid);
-	uart0_put_string("\n\r");
+	uart1_put_string("\n\r\n\r----- PROCESSES CURRENTLY IN READY QUEUE -----\n\r\n\r");
+	uart1_put_string("Current running process with PID ");
+	uart1_put_char(num+gp_current_process->m_pid);
+	uart1_put_string("\n\r");
 	
 	for (i = 0; i < 4; i++){
 		if(!isEmpty(&ready_priority_queue[i])){
 			PCB_NODE* cur = ready_priority_queue[i].head;
-			uart0_put_string("\n\rPriority ");
-			uart0_put_char(num+i);
-			uart0_put_string(":\n\r");
+			uart1_put_string("\n\rPriority ");
+			uart1_put_char(num+i);
+			uart1_put_string(":\n\r");
 			
 			while(cur != NULL){
-				uart0_put_string("\t Process with PID ");
-				uart0_put_char(num+cur->p_pcb->m_pid);
-				uart0_put_string("\n\r");
+				uart1_put_string("\t Process with PID ");
+				uart1_put_char(num+cur->p_pcb->m_pid);
+				uart1_put_string("\n\r");
 				cur = cur->next;
 			}
 		}
@@ -473,19 +473,19 @@ void k_print_blocked_on_memory_queue()
 {
 	int i = 0;
 	char num = '0';
-	uart0_put_string("\n\r\n\r----- PROCESSES CURRENTLY IN BLOCKED ON MEMORY QUEUE -----\n\r");
+	uart1_put_string("\n\r\n\r----- PROCESSES CURRENTLY IN BLOCKED ON MEMORY QUEUE -----\n\r");
 	
 	for (i = 0; i < 4; i++){
 		if(!isEmpty(&blocked_on_memory_queue[i])){
 			PCB_NODE* cur = blocked_on_memory_queue[i].head;
-			uart0_put_string("\n\rPriority ");
-			uart0_put_char(num+i);
-			uart0_put_string(":\n\r");
+			uart1_put_string("\n\rPriority ");
+			uart1_put_char(num+i);
+			uart1_put_string(":\n\r");
 			
 			while(cur != NULL){
-				uart0_put_string("\t Process with PID ");
-				uart0_put_char(num+cur->p_pcb->m_pid);
-				uart0_put_string("\n\r");
+				uart1_put_string("\t Process with PID ");
+				uart1_put_char(num+cur->p_pcb->m_pid);
+				uart1_put_string("\n\r");
 				cur = cur->next;
 			}
 		}

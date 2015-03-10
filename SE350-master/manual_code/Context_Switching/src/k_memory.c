@@ -177,7 +177,7 @@ void *k_request_memory_block(void) {
 int k_non_block_release_memory_block(void *p_mem_blk)
 {
 	int index;
-
+	__disable_irq();
 	if (p_mem_blk == NULL){
 		return RTX_ERR;
 	}
@@ -192,6 +192,7 @@ int k_non_block_release_memory_block(void *p_mem_blk)
 	
 	index = ((U8*)p_mem_blk - beginHeap)/MEMORY_BLOCK_SIZE;
 	*(beginMemMap + index) = 0;
+	__enable_irq();
 	return RTX_OK;
 }
 

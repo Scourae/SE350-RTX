@@ -120,11 +120,11 @@ void send_message_test(void)
 	// Change this depending on the pid of this test
 	if (result == 0)
 	{
-		//uart0_put_string("G009_test: test 1 OK\n\r");
+		uart0_put_string("G009_test: test 1 OK\n\r");
 		passed++;
 	}
 	else
-		//uart0_put_string("G009_test: test 1 FAIL\n\r");
+		uart0_put_string("G009_test: test 1 FAIL\n\r");
 	
 	set_process_priority(2, 0);
 	// release_memory_block(message);
@@ -132,8 +132,8 @@ void send_message_test(void)
 	while (1)
 	{
 		
-		if(i % 4000 == 0){
-			//uart0_put_string("Looping 1\n\r");
+		if(i % 40000 == 0){
+			uart0_put_string("Looping 1\n\r");
 			release_processor();
 		}
 		i++;
@@ -151,20 +151,20 @@ void receive_message_test(void)
 	// Change this depending on the pid of this test
 	if (*char_message == 'x') 
 	{
-		//uart0_put_string("G009_test: test 2 OK\n\r");
+		uart0_put_string("G009_test: test 2 OK\n\r");
 		passed++;
 	}
 	else
 	{
-		//uart0_put_string("G009_test: test 2 FAIL\n\r");
+		uart0_put_string("G009_test: test 2 FAIL\n\r");
 	}
 	//set_process_priority(sender_pid, 0);
 	//set_process_priority(receiver_pid, 3);
 	while (1)
 	{
 		
-		if(i % 4000 == 0){
-			//uart0_put_string("Looping 2\n\r");
+		if(i % 400000 == 0){
+			uart0_put_string("Looping 2\n\r");
 			release_processor();
 		}
 		i++;
@@ -175,14 +175,13 @@ void receive_message_test(void)
 void send_message_to_blocked(void)
 {
 	int i = 0;
-	int sender_pid = 1;
 //	int receiver_pid = 3;
-	ENVELOPE* message = receive_message(&sender_pid);
+	ENVELOPE* message = receive_message(NULL);
 	char* char_message = (char*) message->message;
 	// Change this depending on the pid of this test
 	if (*char_message == 'x') 
 	{
-		//uart0_put_string("G009_test: test 3 OK\n\r");
+		uart0_put_string("G009_test: test 3 OK\n\r");
 		passed++;
 	}
 	else
@@ -194,8 +193,8 @@ void send_message_to_blocked(void)
 	while (1)
 	{
 			
-		if(i % 4000 == 0){
-			//uart0_put_string("Looping 3\n\r");
+		if(i % 40000 == 0){
+			uart0_put_string("Looping 3\n\r");
 			release_processor();
 		}
 		i++;
@@ -208,8 +207,8 @@ void receive_message_to_blocked(void)
 	int i = 0;
 	while (1)
 	{
-		if (i % 4000 == 0){
-			//uart0_put_string("Looping 4\n\r");
+		if (i % 40000 == 0){
+			uart0_put_string("Looping 4\n\r");
 			release_processor();
 		}
 		i++;

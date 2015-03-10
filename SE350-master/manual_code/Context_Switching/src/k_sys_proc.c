@@ -21,15 +21,20 @@ U8 g_char_in;
 U32 g_char_out_index = 0;
 ENVELOPE* g_curr_p = NULL;
 
+int elapsed =0 ;
+int w_secs,w_mins,w_hours;
+int base=0;
+int show_wclock = 0;
+
 int k_delayed_send(int process_id, void * env, int delay){
 	ENVELOPE *lope = (ENVELOPE *) env;
 	int response = 0;
-	__disable_irq();
+	//__disable_irq();
 	lope->delay = g_timer_count + delay;
 	send_message_preemption_flag = 0;
 	response = k_send_message(TIMER_PID, env);
 	send_message_preemption_flag = 1;
-	__enable_irq();
+	//__enable_irq();
 	return response;
 }
 
@@ -127,7 +132,9 @@ void timer_i_proc(void) {
 	send_message_preemption_flag = 0;
 	while (t_queue.head != NULL && t_queue.head->delay <= g_timer_count){
 		ENVELOPE* cur = dequeue_env_queue(&t_queue);
+		__enable_irq();
 		k_send_message (cur->destination_pid, (void *) cur);
+		__disable_irq();
 		if (gp_pcbs[cur->destination_pid]->m_priority > gp_current_process->m_priority){
 			preemption_flag = 1;
 		}
@@ -184,7 +191,7 @@ void uart_i_proc(void) {
 			msg->nextMsg = NULL;
 			msg->message_type = MSG_CRT_DISPLAY;
 			msg->delay = 0;
-			set_message(msg, display_msg, display_size*sizeof(char));	
+			set_message(msg, display_msg, display_size*sizeof(char));
 			k_send_message(CRT_PID, msg);
 			uart_asm_preemption_flag = 1;
 		}
@@ -266,11 +273,10 @@ void uart_i_proc(void) {
 void kcd_proc(void) 
 {
 	ENVELOPE* msg;
-	int* sender;
 	int i;
 	while(1)
 	{
-		msg = (ENVELOPE*) receive_message(sender);
+		msg = (ENVELOPE*) receive_message(NULL);
 		if (msg != NULL)
 		{
 			if (msg->message_type == MSG_COMMAND_REGISTRATION)
@@ -279,8 +285,8 @@ void kcd_proc(void)
 				{
 					if (g_kc_reg[i].pid == -1)
 					{
-						g_kc_reg[i].pid = *sender;
-						strcpy(msg->message, g_kc_reg[i].command);
+						g_kc_reg[i].pid = msg->sender_pid;
+						strcpy(g_kc_reg[i].command, msg->message);
 						break;
 					}
 				}
@@ -308,18 +314,18 @@ void kcd_proc(void)
 				{
 					if (strcmp(command,g_kc_reg[j].command) == 0)
 					{
-						ENVELOPE* kcd_msg = (ENVELOPE*) k_request_memory_block();
+						ENVELOPE* kcd_msg = (ENVELOPE*) request_memory_block();
 						kcd_msg->sender_pid = KCD_PID;
 						kcd_msg->destination_pid = g_kc_reg[j].pid;
 						kcd_msg->nextMsg = NULL;
 						kcd_msg->message_type = MSG_KCD_DISPATCH;
 						kcd_msg->delay = 0;
 						set_message(kcd_msg, message_curr, i*sizeof(char));	
-						send_message(KCD_PID, kcd_msg);
+						send_message(g_kc_reg[j].pid, kcd_msg);
 						break;
 					}
 				}
-				k_release_memory_block(msg);
+				release_memory_block(msg);
 			}
 		}
 	}
@@ -334,115 +340,129 @@ void crt_proc(void)
 			send_message(UART_IPROC_PID, env);
 			pUart->IER |= IER_THRE;
 		} else {
-			k_release_memory_block(env->message);
+			release_memory_block(env);
 		}
-		
 	}
 }
 
-int wall_clock_count =0 ;
-int w_secs,w_mins,w_hrs;
-int time=0;
-int show_wclock = 1;
-
-void 24hr_wall_clock() {
+void wall_clock_proc(void) {
 	
 	/*sends message to kcd to register the command types*/
 	ENVELOPE *msg = (ENVELOPE *)request_memory_block();
+	
 	msg->message_type = MSG_COMMAND_REGISTRATION;
-	msg->message="%WT" + '\0';
-	k_send_message(KCD_PID, msg);		
+	msg->sender_pid = WALL_CLOCK_PID;
+	msg->destination_pid = KCD_PID;
+	set_message(msg, "%WR" + '\0', 4*sizeof(char));
+	send_message(KCD_PID, msg);		
 		
 	msg = (ENVELOPE *)request_memory_block();
+	msg->sender_pid = WALL_CLOCK_PID;
+	msg->destination_pid = KCD_PID;
 	msg->message_type = MSG_COMMAND_REGISTRATION;
-	msg->message="%WS" + '\0';
-	k_send_message(KCD_PID, msg);	
+	set_message(msg, "%WS" + '\0', 4*sizeof(char));
+	send_message(KCD_PID, msg);	
 	
 	msg = (ENVELOPE *)request_memory_block();
+	msg->sender_pid = WALL_CLOCK_PID;
+	msg->destination_pid = KCD_PID;
 	msg->message_type = MSG_COMMAND_REGISTRATION;
-	msg->message="%WT" + '\0';
-	k_send_message(KCD_PID, msg);	
-	
-	
-	
-	while(1){
-		
-			ENVELOPE * msg=k_receive_message(NULL);
-				
-			if(msg->message_type == MSG_WALL_CLOCK && 
-				msg->sender_pid == WALL_CLOCK_PID && show_wclock ==1) {
-					
-				ENVELOPE * w_clock = (ENVELOPE*) k_request_memory_block();
-												
-						w_clock->message_type = MSG_CRT_DISPATCH;
-						
-						int curr_time = g_timer_count - (wall_clock_count++);
-						w_secs= (curr_time /1000)%60;			
-						//1000s * 60s/min
-						w_mins = (curr_time/(60000))%60;
-						// 1hr= 1000*60*60
-						w_hours= (curr_time/(3600000))%24;
-						
-						msg->message=""+w_hours+ ":" + w_mins + ":" + w_secs + '\0';
-						send_message(CRT_PID, msg->message);	
-			}			
-			
-				if (msg->message[0] == '%' && crt_message->message[1] == 'W' && crt_message->message[2]== 'R') {
-					show_wclock = 1;
-					ENVELOPE *msg =(ENVELOPE *) request_memory_block();
-					msg->message_type=MSG_WALL_CLOCK;			
-					msg->sender_pid=WALL_CLOCK_PID;
-					msg->destination_pid=WALL_CLOCK_PID;
-					msg->message="NOTHING";
-					
-					w_secs=0;
-					w_mins=0;
-					w_hours=0;
-					
-					time = 0;			
-						wall_clock_count=g_timer_count;
-					
-					delayed_send(WALL_CLOCK_PID, msg->message,1000);		
-					
-				}
-			 if (msg->message[0] == '%' && msgm->message[1] == 'W' && msg->message[2]== 'S') {
-					show_wclock = 1;
-				 int h1,h2,m1,m2,s1,s2;
-					ENVELOPE *msg =(ENVELOPE *) request_memory_block();
-					msg->message_type=MSG_WALL_CLOCK;		
+	set_message(msg, "%WT" + '\0', 4*sizeof(char));
+	send_message(KCD_PID, msg);	
 
-					h1=msg->message[4];
-					h2=msg->message[5];
-				 
-					h=h1*10 + h2;
-				 
-					m1=msg->message[7];
-					m2=msg->message[8];
-				 
-					m=m1*10 + m2;
-				 
-					s1=msg->message[10];
-					s2=msg->message[11];
-				 
-					s= s1*10 + s2;
-				 
-					w_secs=s;
-					w_mins=m;
-					w_hours=h;
-					time = g_timer_count-wall_clock_count;
-					
-					msg->message=""+w_hours+ ":" + w_mins + ":" + w_secs + '\0';
-					delayed_send(CRT_PID, crt_message->message,1000);		
-					
+	while(1){
+
+		ENVELOPE * rec_msg= (ENVELOPE*) receive_message(NULL);
+		char * char_message = (char *) rec_msg->message;
+		if(rec_msg->message_type == MSG_WALL_CLOCK && 
+			rec_msg->sender_pid == WALL_CLOCK_PID && show_wclock ==1) {
+			int curr_time = 0;
+			int s1, s2, m1, m2, h1, h2;
+			
+			ENVELOPE * delay_msg = (ENVELOPE*) request_memory_block();
+				
+			ENVELOPE * w_clock = (ENVELOPE*) request_memory_block();
+			w_clock->sender_pid = WALL_CLOCK_PID;
+			w_clock->destination_pid = CRT_PID;
+			w_clock->message_type = MSG_CRT_DISPLAY;
+
+			curr_time = g_timer_count - elapsed + base;
+			w_secs= (curr_time /1000)%60;
+					s2=w_secs%10;
+				s1=w_secs/10;
+			w_mins = (curr_time/(60000))%60;
+				m2=w_mins%10;
+				m1=w_mins/10;
+			w_hours= (curr_time/(3600000))%24;
+				h2=w_hours%10;
+			h1=w_hours/10;
+			w_clock->message = w_clock + HEADER_OFFSET;
+			sprintf(w_clock->message, "%d%d:%d%d:%d%d\n\r", h1,h2,m1,m2,s1,s2); 
+
+			send_message(CRT_PID, w_clock);
+				
+	
+				delay_msg->message_type=MSG_WALL_CLOCK;			
+				delay_msg->sender_pid=WALL_CLOCK_PID;
+				delay_msg->destination_pid=WALL_CLOCK_PID;
+				delay_msg->message=NULL;
+				delayed_send(WALL_CLOCK_PID, delay_msg, 1000);
+		}
+		else {
+			if (char_message[2]== 'R') {
+				ENVELOPE *msg =(ENVELOPE *) request_memory_block();
+				msg->message_type=MSG_WALL_CLOCK;			
+				msg->sender_pid=WALL_CLOCK_PID;
+				msg->destination_pid=WALL_CLOCK_PID;
+				msg->message=NULL;
+
+				w_secs=0;
+				w_mins=0;
+				w_hours=0;
+
+				base = 0;
+				elapsed = g_timer_count;
+				if (show_wclock == 0){
+					show_wclock = 1;
+					send_message(WALL_CLOCK_PID, msg);
 				}
-			
-			
-			else if (crt_message->message[0] == '%' && crt_message->message[1] == 'W' && crt_message->message[2]== 'T') {
+			}
+			if (char_message[2]== 'S') {
+				int h1,h2,m1,m2,s1,s2;			 
+				ENVELOPE *msg =(ENVELOPE *) request_memory_block();
+				msg->message_type=MSG_WALL_CLOCK;			
+				msg->sender_pid=WALL_CLOCK_PID;
+				msg->destination_pid=WALL_CLOCK_PID;
+				msg->message=NULL;
+				
+				h1=char_message[4] - '0';
+				h2=char_message[5] - '0';
+
+				w_hours=h1*10 + h2;
+
+				m1=char_message[7] - '0';
+				m2=char_message[8] - '0';
+
+				w_mins=m1*10 + m2;
+
+				s1=char_message[10] - '0';
+				s2=char_message[11] - '0';
+
+				w_secs= s1*10 + s2;
+
+				elapsed = g_timer_count;
+				base = ((w_hours * 3600) + (w_mins * 60) + w_secs) * 1000;
+				if (show_wclock == 0){
+					show_wclock = 1;
+					send_message(WALL_CLOCK_PID, msg);
+				}
+			}
+			else if (char_message[2]== 'T') {
 				show_wclock=0;
 			}
-				
+		}
+		release_memory_block(rec_msg);
 	}//end while
-	
 }
 
 

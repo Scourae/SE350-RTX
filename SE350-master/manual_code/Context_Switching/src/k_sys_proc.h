@@ -24,4 +24,5 @@ void kcd_proc(void);
 /* CRT process */
 void crt_proc(void);
 
+void wall_clock_proc(void);
 #endif /*K_SYSTEM_PROC_H*/
