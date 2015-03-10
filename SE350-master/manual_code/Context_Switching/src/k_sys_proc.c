@@ -213,9 +213,10 @@ void uart_i_proc(void) {
 				g_input_buffer[g_input_buffer_index] = g_char_in;
 				g_input_buffer_index++;
 			}
-#endif
+#else
 			g_input_buffer[g_input_buffer_index] = g_char_in;
 			g_input_buffer_index++;
+#endif
 		}
 		else // Enter is pressed
 		{
@@ -325,9 +326,9 @@ void kcd_proc(void)
 						break;
 					}
 				}
-				release_memory_block(msg);
 			}
 		}
+		release_memory_block(msg);
 	}
 }
 

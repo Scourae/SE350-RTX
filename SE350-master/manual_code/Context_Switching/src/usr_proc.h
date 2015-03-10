@@ -9,10 +9,11 @@
 #define USR_PROC_H
 
 void set_test_procs(void);
-void send_message_test(void);
-void receive_message_test(void);
+void send_delayed_message(void);
+void receive_delayed_message(void);
+void receive_delayed_message_preemption(void);
+void request_all_memory_block(void);
+
 void send_message_to_blocked(void);
 void receive_message_to_blocked(void);
-void proc5(void);
-void proc6(void);
 #endif /* USR_PROC_H_ */
