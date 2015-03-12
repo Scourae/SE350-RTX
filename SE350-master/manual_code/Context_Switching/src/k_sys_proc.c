@@ -118,7 +118,6 @@ void timer_i_proc(void) {
 	int preemption_flag = 0;
 	__disable_irq(); // make this process non blocking
 	
-	// TODO: figure out the LPC_TIM0
 	LPC_TIM0->IR = (1 << 0);
 	
 	lope = k_non_blocking_receive_message(TIMER_PID);
@@ -142,8 +141,6 @@ void timer_i_proc(void) {
 	send_message_preemption_flag = 1;
 	g_timer_count++;
 	__enable_irq();
-	
-	// TODO: figure how to switch out of this process
 	
 	if (preemption_flag){
 		k_release_processor();
@@ -313,7 +310,7 @@ void kcd_proc(void)
 				
 				for (j = 0; j < KC_MAX_COMMANDS; j++)
 				{
-					if (strcmp(command,g_kc_reg[j].command) == 0)
+					if ((strcmp(command,g_kc_reg[j].command) == 0)&&(g_kc_reg[j].pid != -1))
 					{
 						ENVELOPE* kcd_msg = (ENVELOPE*) request_memory_block();
 						kcd_msg->sender_pid = KCD_PID;
@@ -429,33 +426,40 @@ void wall_clock_proc(void) {
 				}
 			}
 			if (char_message[2]== 'S') {
-				int h1,h2,m1,m2,s1,s2;			 
-				ENVELOPE *msg =(ENVELOPE *) request_memory_block();
-				msg->message_type=MSG_WALL_CLOCK;			
-				msg->sender_pid=WALL_CLOCK_PID;
-				msg->destination_pid=WALL_CLOCK_PID;
-				msg->message=NULL;
+				if ((char_message[4] >= '0')&&(char_message[4] <= '9')&&(char_message[5] >= '0')&&(char_message[5] <= '9')&&(char_message[6] == ':')
+					&&(char_message[7] >= '0')&&(char_message[7] <= '9')&&(char_message[8] >= '0')&&(char_message[8] <= '9')&&(char_message[9] == ':')
+					&&(char_message[10] >= '0')&&(char_message[10] <= '9')&&(char_message[11] >= '0')&&(char_message[11] <= '9')
+					&&((char_message[12] == ' ')||(char_message[12] == '\0')))
+				{
 				
-				h1=char_message[4] - '0';
-				h2=char_message[5] - '0';
+					int h1,h2,m1,m2,s1,s2;			 
+					ENVELOPE *msg =(ENVELOPE *) request_memory_block();
+					msg->message_type=MSG_WALL_CLOCK;			
+					msg->sender_pid=WALL_CLOCK_PID;
+					msg->destination_pid=WALL_CLOCK_PID;
+					msg->message=NULL;
+					
+					h1=char_message[4] - '0';
+					h2=char_message[5] - '0';
 
-				w_hours=h1*10 + h2;
+					w_hours=h1*10 + h2;
 
-				m1=char_message[7] - '0';
-				m2=char_message[8] - '0';
+					m1=char_message[7] - '0';
+					m2=char_message[8] - '0';
 
-				w_mins=m1*10 + m2;
+					w_mins=m1*10 + m2;
 
-				s1=char_message[10] - '0';
-				s2=char_message[11] - '0';
+					s1=char_message[10] - '0';
+					s2=char_message[11] - '0';
 
-				w_secs= s1*10 + s2;
+					w_secs= s1*10 + s2;
 
-				elapsed = g_timer_count;
-				base = ((w_hours * 3600) + (w_mins * 60) + w_secs) * 1000;
-				if (show_wclock == 0){
-					show_wclock = 1;
-					send_message(WALL_CLOCK_PID, msg);
+					elapsed = g_timer_count;
+					base = ((w_hours * 3600) + (w_mins * 60) + w_secs) * 1000;
+					if (show_wclock == 0){
+						show_wclock = 1;
+						send_message(WALL_CLOCK_PID, msg);
+					}
 				}
 			}
 			else if (char_message[2]== 'T') {

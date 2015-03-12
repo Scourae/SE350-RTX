@@ -93,9 +93,9 @@ PCB_NODE* remove_from_blocked_list(int pid)
  void* k_receive_message(int* sender_ID)
  {
 	 ENVELOPE* msg;
-	PCB* gp_current_process = k_get_current_process();
-	PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
-	 //__disable_irq();
+	 PCB* gp_current_process = k_get_current_process();
+	 PCB_NODE* currPro = gp_pcb_nodes[gp_current_process->m_pid];
+	 __disable_irq();
 	while(msg_empty(&(gp_current_process->env_q)))
 	{
 		if (gp_current_process->m_state != BLOCKED_ON_RECEIVE)
@@ -104,13 +104,13 @@ PCB_NODE* remove_from_blocked_list(int pid)
 			currPro->next = NULL;
 			add_to_blocked_list(currPro);
 		}
-		//__enable_irq();
+		__enable_irq();
 		k_release_processor();
-		//__disable_irq();
+		__disable_irq();
 	}
 	msg = dequeue_env_queue(&(gp_current_process->env_q));
 	sender_ID = (int*) &msg->sender_pid;
-	//__enable_irq();
+	__enable_irq();
 	return (void*) msg;
  }
 
