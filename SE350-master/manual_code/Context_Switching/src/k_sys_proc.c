@@ -333,6 +333,7 @@ void crt_proc(void)
 {
 	while(1){
 		ENVELOPE* env = (ENVELOPE*) receive_message(NULL);
+
 		LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *)LPC_UART0;
 		if (env->message_type == MSG_CRT_DISPLAY){
 			send_message(UART_IPROC_PID, env);
@@ -479,17 +480,29 @@ void set_priority_proc(void) {
 	msg->destination_pid = KCD_PID;
 	set_message(msg, "%C" + '\0', 4*sizeof(char));
 	send_message(KCD_PID, msg);
-	
 	while(1){
 		int priority, pid;
 		ENVELOPE * rec_msg = (ENVELOPE*) receive_message(NULL);
 		char * char_message = (char *) rec_msg->message;
-		if ((char_message[3] >= '1')&&(char_message[3] <= '6')&&(char_message[4] == ' ')&&(char_message[5] >= '0')&&(char_message[5] <= '3')){
+		if ((char_message[3] >= '1')&&(char_message[3] <= '6')&&(char_message[4] == ' ')&&(char_message[5] >= '0')&&(char_message[5] <= '3') && char_message[6] == '\0'){
 			pid = char_message[3] - '0';
 			priority = char_message[5] - '0';
-			set_process_priority(pid, priority);
-			release_memory_block(rec_msg);
+			//printf("message %s", char_message);
+			//printf("pid %d priority %d", pid, priority);
+			set_process_priority(pid, priority);	
 		}
+		else {				
+			ENVELOPE * error_msg = (ENVELOPE*) request_memory_block();
+			error_msg->sender_pid = SET_PRIORITY_PID;
+			error_msg->destination_pid = CRT_PID;
+			error_msg->message_type = MSG_CRT_DISPLAY;
+
+			error_msg->message = error_msg + HEADER_OFFSET;
+			sprintf(error_msg->message, "You have entered an invalid input\n\r"); 
+
+			send_message(CRT_PID, error_msg);
+		}
+		release_memory_block(rec_msg);
 	}
 	
 }

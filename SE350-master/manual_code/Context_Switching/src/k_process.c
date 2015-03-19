@@ -159,7 +159,7 @@ void process_init()
 	}
 	
 	// Adding the system processes to the appropriate ready queue
-	for (i = 11; i <= 13; i++) {
+	for (i = 10; i <= 13; i++) {
 		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), gp_pcb_nodes[i]);
 	}
 
