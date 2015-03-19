@@ -20,6 +20,9 @@
 #define NUM_TEST_PROCS 6
 #define NUM_PROCS 16
 
+#define STRESS_TEST_A_PID 7
+#define STRESS_TEST_B_PID 8
+#define STRESS_TEST_C_PID 9
 #define SET_PRIORITY_PID 10
 #define WALL_CLOCK_PID 11
 #define KCD_PID 12
@@ -66,6 +69,7 @@ typedef enum {
 	MSG_CRT_DISPLAY,
 	MSG_KCD_DISPATCH,
 	MSG_WALL_CLOCK
+	MSG_COUNT_REPORT
 } MSG_TYPE_E;
 
 // Keyboard command list
