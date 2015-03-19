@@ -481,10 +481,14 @@ void set_priority_proc(void) {
 	send_message(KCD_PID, msg);
 	
 	while(1){
+		int priority, pid;
 		ENVELOPE * rec_msg = (ENVELOPE*) receive_message(NULL);
 		char * char_message = (char *) rec_msg->message;
 		if ((char_message[3] >= '0')&&(char_message[3] <= '9')&&(char_message[4] == ' ')&&(char_message[5] >= '0')&&(char_message[5] <= '3')){
+			pid = char_message[3] - '0';
+			priority = char_message[5] - '0';
 			set_process_priority(char_message[3], char_message[5]);
+			release_memory_block(rec_msg);
 		}
 	}
 	
