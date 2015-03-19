@@ -470,4 +470,22 @@ void wall_clock_proc(void) {
 	}//end while
 }
 
-
+void set_priority_proc(void) {
+	
+	/*sends message to kcd to register the command types*/
+	ENVELOPE *msg = (ENVELOPE *)request_memory_block();
+	msg->message_type = MSG_COMMAND_REGISTRATION;
+	msg->sender_pid = SET_PRIORITY_PID;
+	msg->destination_pid = KCD_PID;
+	set_message(msg, "%C" + '\0', 4*sizeof(char));
+	send_message(KCD_PID, msg);
+	
+	while(1){
+		ENVELOPE * rec_msg = (ENVELOPE*) receive_message(NULL);
+		char * char_message = (char *) rec_msg->message;
+		if ((char_message[3] >= '0')&&(char_message[3] <= '9')&&(char_message[4] == ' ')&&(char_message[5] >= '0')&&(char_message[5] <= '3')){
+			set_process_priority(char_message[3], char_message[5]);
+		}
+	}
+	
+}

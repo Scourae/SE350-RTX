@@ -24,5 +24,9 @@ void kcd_proc(void);
 /* CRT process */
 void crt_proc(void);
 
+/* Wall clock process */
 void wall_clock_proc(void);
+
+/* Set priority process */
+void set_priority_proc(void);
 #endif /*K_SYSTEM_PROC_H*/

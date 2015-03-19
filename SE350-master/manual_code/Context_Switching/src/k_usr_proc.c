@@ -3,8 +3,6 @@
 #include "printf.h"
 #include "string.h"
 
-void set_priority_proc(void){}
-
 void stress_test_a(void){
 }
 

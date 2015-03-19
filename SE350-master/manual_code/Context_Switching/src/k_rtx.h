@@ -20,6 +20,7 @@
 #define NUM_TEST_PROCS 6
 #define NUM_PROCS 16
 
+#define SET_PRIORITY_PID 10
 #define WALL_CLOCK_PID 11
 #define KCD_PID 12
 #define CRT_PID 13

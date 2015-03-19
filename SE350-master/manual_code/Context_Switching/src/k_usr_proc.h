@@ -3,8 +3,6 @@
 
 #include "k_rtx.h"
 
-void set_priority_proc(void);
-
 void wall_clock_display(void);
 
 void stress_test_a(void);
