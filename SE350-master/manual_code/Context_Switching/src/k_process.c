@@ -64,19 +64,19 @@ void process_init()
 	
 	// Setting the stress_test_a Process in the initialization table
 	g_proc_table[7].m_pid = 7;
-	g_proc_table[7].m_priority = LOWEST;
+	g_proc_table[7].m_priority = HIGH;
 	g_proc_table[7].mpf_start_pc = &stress_test_a;
 	g_proc_table[7].m_stack_size = 0x100;
 	
 	// Setting the stress_test_b Process in the initialization table
 	g_proc_table[8].m_pid = 8;
-	g_proc_table[8].m_priority = LOWEST;
+	g_proc_table[8].m_priority = HIGH;
 	g_proc_table[8].mpf_start_pc = &stress_test_b;
 	g_proc_table[8].m_stack_size = 0x100;
 	
 	// Setting the stress_test_c Process in the initialization table
 	g_proc_table[9].m_pid = 9;
-	g_proc_table[9].m_priority = LOWEST;
+	g_proc_table[9].m_priority = HIGH;
 	g_proc_table[9].mpf_start_pc = &stress_test_c;
 	g_proc_table[9].m_stack_size = 0x100;
 	
@@ -153,13 +153,8 @@ void process_init()
 		ready_priority_queue[i].tail = NULL;
 	}
 	
-	// Adding processes to the appropriate ready queue
-	for (i = 0; i < NUM_TEST_PROCS+1; i++) {
-		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), gp_pcb_nodes[i]);
-	}
-	
-	// Adding the system processes to the appropriate ready queue
-	for (i = 10; i <= 13; i++) {
+	// Adding the processes to the appropriate ready queue
+	for (i = 0; i <= 13; i++) {
 		enqueue(&(ready_priority_queue[(gp_pcbs[i])->m_priority]), gp_pcb_nodes[i]);
 	}
 
