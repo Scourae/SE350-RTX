@@ -484,7 +484,7 @@ void set_priority_proc(void) {
 		int priority, pid;
 		ENVELOPE * rec_msg = (ENVELOPE*) receive_message(NULL);
 		char * char_message = (char *) rec_msg->message;
-		if ((char_message[3] >= '1')&&(char_message[3] <= '6')&&(char_message[4] == ' ')&&(char_message[5] >= '0')&&(char_message[5] <= '3') && char_message[6] == '\0'){
+		if ((char_message[3] >= '1')&&(char_message[3] <= '6')&&(char_message[4] == ' ')&&(char_message[5] >= '0')&&(char_message[5] <= '3') && (char_message[6] == '\0')){
 			pid = char_message[3] - '0';
 			priority = char_message[5] - '0';
 			//printf("message %s", char_message);

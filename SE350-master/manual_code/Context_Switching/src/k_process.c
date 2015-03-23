@@ -239,6 +239,11 @@ int remove (QUEUE *q, PCB_NODE * n){
 		PCB_NODE * cur = q->head->next;
 		while (cur  != NULL){
 			if (cur == n){
+				/* our changes */
+				if(cur->next == NULL){
+					q->tail = prev;
+				}
+				/*****/
 				prev->next = cur->next;
 				cur->next = NULL;
 				return RTX_OK;
