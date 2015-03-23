@@ -33,7 +33,7 @@ void stress_test_a(void){
 		msg->message_type = MSG_COUNT_REPORT;
 		msg->sender_pid = STRESS_TEST_A_PID;
 		msg->destination_pid = STRESS_TEST_B_PID;
-		msg->message = &num;
+		msg->message = (void*) num;
 		send_message(STRESS_TEST_B_PID, msg);	
 		num += 1;
 		release_processor();
@@ -50,44 +50,50 @@ void stress_test_b(void){
 }
 
 void stress_test_c(void){
-	ENV_QUEUE * messageQueue;
+	ENV_QUEUE messageQueue;
 	ENVELOPE * p;
 	ENVELOPE * q;
 	
 	while(1) {
-		if(messageQueue == NULL) {
+		if(msg_empty(&messageQueue)) {
 			p = receive_message(NULL);
 		} else {
-			p = dequeue_env_queue(messageQueue);
+			p = dequeue_env_queue(&messageQueue);
 		}
 		
 		if( p->message_type == MSG_COUNT_REPORT ) {
-			if(((char*)(p->message))[0] %20 == 0) {
-				ENVELOPE * msg =(ENVELOPE*)  request_memory_block();
-				char * message = "Process C\0";
+			int value = (int)(p->message);
+			non_block_release_memory_block(p);
+			if(value % 31 == 0) {
+				ENVELOPE * msg;
+				char* message;
+				message = "Process C";
+				message[9] = '\r';
+				message[10] = '\n';
+				message[11] = '\0';
+				msg = request_memory_block();
 				msg->message_type = MSG_CRT_DISPLAY;
 				msg->sender_pid = STRESS_TEST_C_PID;
 				msg->destination_pid = CRT_PID;
-				set_message(msg, &message, 10*sizeof(char));
+				set_message(msg, message, 12*sizeof(char));
 				send_message(CRT_PID, msg);	
-				
 				/*hibernate for 10s*/
 				q=(ENVELOPE *) request_memory_block();
 				q->message_type=MSG_WAKEUP10;
-				msg->sender_pid = STRESS_TEST_C_PID;
-				msg->destination_pid = STRESS_TEST_C_PID;
-				delayed_send(STRESS_TEST_C_PID, msg, 10000);
+				q->sender_pid = STRESS_TEST_C_PID;
+				q->destination_pid = STRESS_TEST_C_PID;
+				delayed_send(STRESS_TEST_C_PID, q, 10000);
 				while (1) {
 					p= receive_message(NULL);
 					if(p->message_type == MSG_WAKEUP10) {
 						break;
 					} else {
-						msg_enqueue(messageQueue, p);
+						msg_enqueue(&messageQueue, p);
 					}					
 				}
 			}
 		}
 		release_memory_block(p);
-		release_processor();
+		//release_processor();
 	}
 }

@@ -139,6 +139,10 @@ extern int k_release_memory_block(void *);
 #define release_memory_block(p_mem_blk) _release_memory_block((U32)k_release_memory_block, p_mem_blk)
 extern int _release_memory_block(U32 p_func, void *p_mem_blk) __SVC_0;
 
+extern int k_non_block_release_memory_block(void *);
+#define non_block_release_memory_block(p_mem_blk) _non_block_release_memory_block((U32)k_non_block_release_memory_block, p_mem_blk)
+extern int _non_block_release_memory_block(U32 p_func, void *p_mem_blk) __SVC_0;
+
 extern int k_get_process_priority(int pid);
 #define get_process_priority(pid) _get_process_priority((U32)k_get_process_priority, pid)
 extern int _get_process_priority(U32 p_func, int pid) __SVC_0;

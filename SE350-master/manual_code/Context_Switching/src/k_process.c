@@ -413,7 +413,7 @@ void k_block_current_processs(void)
  * Puts the first PCB node of the blocked queue to the ready queue
  * Marks the first PCB node of the blocked queue as ready
  */
-void k_ready_first_blocked(void)
+int k_ready_first_blocked(void)
 {
 	int i;
 	
@@ -424,8 +424,10 @@ void k_ready_first_blocked(void)
 			(nowReady->p_pcb)->m_state = RDY;
 			priority = nowReady->p_pcb->m_priority;
 			enqueue(&ready_priority_queue[priority], nowReady);
+			return priority;
 		}
 	}
+	return -1;
 }
 
 void k_ready_process(int pid)

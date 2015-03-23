@@ -177,6 +177,7 @@ void *k_request_memory_block(void) {
 int k_non_block_release_memory_block(void *p_mem_blk)
 {
 	int index;
+	int ready_priority;
 	__disable_irq();
 	if (p_mem_blk == NULL){
 		return RTX_ERR;
@@ -192,16 +193,18 @@ int k_non_block_release_memory_block(void *p_mem_blk)
 	
 	index = ((U8*)p_mem_blk - beginHeap)/MEMORY_BLOCK_SIZE;
 	*(beginMemMap + index) = 0;
+	ready_priority = k_ready_first_blocked();
 	__enable_irq();
-	return RTX_OK;
+	return ready_priority;
 }
 
 /**
  * Releases a memory block
  */
 int k_release_memory_block(void *p_mem_blk) {
-	k_non_block_release_memory_block(p_mem_blk);
-	k_ready_first_blocked();
-	k_release_processor();
+	int ready_priority;
+	ready_priority = k_non_block_release_memory_block(p_mem_blk);
+	if (ready_priority != k_get_current_process()->m_priority)
+		k_release_processor();
 	return RTX_OK;
 }
