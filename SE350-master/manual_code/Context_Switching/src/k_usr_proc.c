@@ -94,6 +94,5 @@ void stress_test_c(void){
 			}
 		}
 		release_memory_block(p);
-		//release_processor();
 	}
 }

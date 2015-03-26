@@ -88,7 +88,7 @@ void process_init()
 	
 	// Setting the wall_clock_display Process in the initialization table
 	g_proc_table[11].m_pid = 11;
-	g_proc_table[11].m_priority = SYS_PROC;
+	g_proc_table[11].m_priority = HIGH;
 	g_proc_table[11].mpf_start_pc = &wall_clock_proc;
 	g_proc_table[11].m_stack_size = 0x100;
 	
@@ -417,6 +417,15 @@ int k_ready_first_blocked(void)
 {
 	int i;
 	
+	if(!isEmpty(&blocked_on_memory_queue[SYS_PROC])){
+		int priority = 0;
+		PCB_NODE* nowReady = dequeue(&blocked_on_memory_queue[SYS_PROC]);
+		(nowReady->p_pcb)->m_state = RDY;
+		priority = nowReady->p_pcb->m_priority;
+		enqueue(&ready_priority_queue[priority], nowReady);
+		return priority;
+	}
+	
 	for (i = 0; i < 5; i++){
 		if (!isEmpty(&blocked_on_memory_queue[i])){
 			int priority = 0;
@@ -468,6 +477,18 @@ void k_print_ready_queue()
 			}
 		}
 	}
+	
+	if(!isEmpty(&ready_priority_queue[SYS_PROC])){
+		PCB_NODE* cur = ready_priority_queue[SYS_PROC].head;
+		uart1_put_string("\n\rSystem Priority:\n\r");
+		
+		while(cur != NULL){
+			uart1_put_string("\t Process with PID ");
+			uart1_put_char(num+cur->p_pcb->m_pid);
+			uart1_put_string("\n\r");
+			cur = cur->next;
+		}
+	}
 }
 
 // HotKey #2: printing to the RTX system debug terminal all the procs currently on the blocked on memory queue
@@ -490,6 +511,18 @@ void k_print_blocked_on_memory_queue()
 				uart1_put_string("\n\r");
 				cur = cur->next;
 			}
+		}
+	}
+	
+	if(!isEmpty(&blocked_on_memory_queue[SYS_PROC])){
+		PCB_NODE* cur = blocked_on_memory_queue[SYS_PROC].head;
+		uart1_put_string("\n\rSystem Priority:\n\r");
+		
+		while(cur != NULL){
+			uart1_put_string("\t Process with PID ");
+			uart1_put_char(num+cur->p_pcb->m_pid);
+			uart1_put_string("\n\r");
+			cur = cur->next;
 		}
 	}
 }

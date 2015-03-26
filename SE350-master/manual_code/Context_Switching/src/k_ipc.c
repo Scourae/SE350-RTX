@@ -148,9 +148,13 @@ void k_print_blocked_on_receive_queue_helper(int priority){
 		cur = cur->next;
 	}
 	if (cur == NULL) return;
-	uart1_put_string("\n\rPriority ");
-	uart1_put_char(num+priority);
-	uart1_put_string(":\n\r");
+	if(priority == SYS_PROC){
+		uart1_put_string("\n\rSystem Priority:\n\r");
+	}else{
+		uart1_put_string("\n\rPriority ");
+		uart1_put_char(num+priority);
+		uart1_put_string(":\n\r");
+	}
 	while(cur != NULL){
 		if(cur->p_pcb->m_priority == priority){
 				uart1_put_string("\t Process with PID ");
@@ -170,4 +174,6 @@ void k_print_blocked_on_receive_queue()
 	for(i = 0; i < 4; i++){
 		k_print_blocked_on_receive_queue_helper(i);
 	}
+	
+	k_print_blocked_on_receive_queue_helper(SYS_PROC);
 } 

@@ -153,8 +153,9 @@ void receive_delayed_message_preemption(void)
 		uart0_put_string("G009_test: test 3 FAIL\n\r");
 	}
 	release_memory_block(message);
-	set_process_priority(3, LOWEST);
 	set_process_priority(1, LOWEST);
+	set_process_priority(3, LOWEST);
+	
 	while (1)
 	{
 		release_processor();
@@ -256,6 +257,7 @@ void request_all_memory_block(void)
 	uart0_put_string("G009_test: ");
 	uart0_put_char(failed);
   uart0_put_string("/6 tests FAILED\n\r");
+	set_process_priority(6, LOWEST);
 	set_process_priority(4, LOWEST);
 	while (1)
 	{
