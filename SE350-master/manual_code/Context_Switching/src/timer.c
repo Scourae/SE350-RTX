@@ -12,7 +12,7 @@
 #define BIT(X) (1<<X)
 
 volatile uint32_t g_timer_count = 0; // increment every 1 ms
-
+volatile uint32_t* function_timer;
 /**
  * @brief: initialize timer. Only timer 0 is supported
  */
@@ -51,12 +51,8 @@ uint32_t timer_init(uint8_t n_timer)
 		-----------------------------------------------------
 		*/
 		pTimer = (LPC_TIM_TypeDef *) LPC_TIM0;
-
-	} else { /* other timer not supported yet */
-		return 1;
-	}
-
-	/*
+		
+			/*
 	-----------------------------------------------------
 	Step 4: Interrupts configuration
 	-----------------------------------------------------
@@ -87,6 +83,19 @@ uint32_t timer_init(uint8_t n_timer)
 
 	/* Step 4.5: Enable the TCR. See table 427 on pg494 of LPC17xx_UM. */
 	pTimer->TCR = 1;
+
+	} else if (n_timer == 1){
+		pTimer = (LPC_TIM_TypeDef*) LPC_TIM1;
+		
+		pTimer->PR = 0;
+		pTimer->TCR = BIT(0);
+		function_timer = &pTimer->TC;
+	}
+	else{
+		return 1;
+	}
+
+
 
 	return 0;
 }
